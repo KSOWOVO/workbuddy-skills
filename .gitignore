@@ -1,0 +1,15 @@
+# ===== 敏感凭证：绝不可公开 =====
+.neodata_token
+*.token
+
+# ===== WorkBuddy 内部迁移 / 状态文件 =====
+*.migration.json
+.bm_skillid_migration.json
+.model_invocation_to_override_migration.json
+.user_invocable_only_to_off_migration.json
+.disable_to_model_invocation_migration.json
+
+# ===== 同步规则说明 =====
+# 本仓库只同步「用户自创 skill」（agent_created: true）。
+# 系统 / 市场预装 skill 默认不纳入，避免版权与体积问题。
+# 同步某个自创 skill 时，用 `git add <skill名>` 精准添加，不要 git add -A。
