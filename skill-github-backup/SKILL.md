@@ -84,10 +84,16 @@ git push -u origin main
 
 ## 已踩过的坑（务必记住）
 - **WorkBuddy 的 GitHub MCP 连接器是只读受限 integration**：create_repository / push_files / 搜索仓库全被 GitHub 403/Validation Failed 拒绝，**不能用于建仓或推送**。别浪费时间，直接走「本地 git + API + PAT」。
-- 本机默认无任何 GitHub 凭证（无 credential helper / .git-credentials / env token），别指望复用。
+- 本机初始无任何 GitHub 凭证，但用户选 manager 后 GCM 会把 token 存进 **Windows 凭据管理器**（控制面板→凭据管理器可见 `git:https://github.com`）。remote URL 带 token 与凭据管理器**双重保险**，任一可用即零弹窗。
 - `.gitignore` 匹配坑：内部迁移文件实际是下划线开头 `_bm_skillid_migration.json`，只写 `.bm_skillid_migration.json`（点开头）匹配不到，必须补 `*_migration.json`。
 - PAT 若明文出现在聊天记录，完成后**提醒用户去 GitHub 删除重生成**；删除后 remote 里 token 失效，需重新配 remote 或更新 .git/config（**删了 token 记得回来改 remote**）。
 - 检查自创 skill 目录时注意嵌套结构（如 `browser-ocr/browser-ocr/`），find 用 `-name SKILL.md` 从根找。
 - **⚠️ 不要用 `printf ... | git credential approve`**：本机非交互环境下 GCM 会弹 UI 死等，命令挂起直到被 SIGTERM kill。想把 token 交给 credential manager 也别走这条路。
-- **Windows 会弹 "select a credential helper" 弹窗**（manager / wincred / none）：告诉用户选 **manager**（加密存 Windows 凭据管理器）+ 勾「始终保持此选项」；wincred 是 legacy，none 每次都要重输。但**本机实际采用的最优解是「remote URL 带 token + 不设 credential.helper」**——URL 自带凭证时 git 不会再触发 helper，从此零弹窗、零交互。
+- **⚠️ Windows 弹 "select a credential helper" 弹窗的根因（2026-09-01 实测）**：WorkBuddy 自带的 PortableGit 在**系统级** `etc/gitconfig` 写死 `credential.helper=helper-selector`，它每次都会弹窗让你选 manager/wincred/none。用户选了 manager 只写进**用户级** `~/.gitconfig`，系统级的 selector 还在 → 两者叠加，照弹。
+  **正确修复（不要走弯路）**：
+  1. 删系统级 selector：`git config --system --unset-all credential.helper`。若报 `could not lock config file`，是之前操作残留了空的 `gitconfig.lock`，`rm -f <PortableGit>/etc/gitconfig.lock` 后重试。
+  2. 用户级保留 `credential.helper=git-credential-manager.exe`（用户选 manager 时已写入）即可。
+  3. remote URL 带 token 作**双保险**（URL 自带凭证时 git 不触发 helper，绝对不弹窗）。
+  4. 验证：`GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never git fetch origin` 应直接到网络层；报网络 TLS 错（本机代理间歇断连）不是弹窗，是网络问题。
+  ❌ **不要** `git config --global --unset credential.helper`——这会删掉用户级 manager 选择，反而让弹窗逻辑混乱。
 - **用户对「自动外发」敏感**：曾中途叫停同步。涉及 push/上传类操作，先确认再执行，别默默后台推；被 kill 的 push 可能只推了一半，恢复后务必用 API 验证云端文件列表。
