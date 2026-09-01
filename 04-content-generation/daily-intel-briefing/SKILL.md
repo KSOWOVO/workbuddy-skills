@@ -64,6 +64,17 @@ agent_created: true
 5. 用知识库「30/70 分位定投法」给每个指数下估值信号结论，并明确"可买/等待/回避"。
 6. 生成 HTML（英文为主 + 弹窗翻译 + 卡片点击走势图）→ 同名 md → present_files（html 首位）。
 
+## 国外信息源（2026-09-01 实测可用性，自动化时优先直连）
+- **WebFetch 可直连（实测通过）**：
+  - `gamesindustry.biz`（游戏行业，含 Newzoo/Sensor Tower 数据，最优先）✅
+  - `theverge.com/tech`（科技/消费电子）✅
+  - `techradar.com`（硬件/消费电子）✅
+  - `anandtech.com`（已转型论坛，CPU/SoC 讨论活跃）✅
+- **WebFetch 直连失败（被墙/超时，勿浪费时间重试）**：reuters.com、ft.com ✗
+- **绕过方案**：Reuters/FT/WSJ/Economist 的资讯用 **WebSearch 英文关键词**抓（走服务端，不受本机网络限制）；WebFetch 失败不代表搜索不到。
+- 数据源优先级：WebFetch 可直连源 > WebSearch（英文关键词 > 中文聚合）> MCP 行情。
+- 常用英文检索词：`"stock market today"`、`"Fed rate hike odds"`、`"semiconductor news"`、`"AI model release"`、`"gaming industry news"`。
+
 ## 踩过的坑
 - **MCP 行情比估算准**：v1 曾估纳指100 日涨跌 -0.5%，westock 实际 +0.08% —— 指数日涨跌必须用 MCP/交易所数据，别用板块代理值。
 - **红利低波指数代码是 `csH30269`**（中证红利低波），PE 8.59、股息率 4.24%；不要用上证红利（不同指数）。且该指数无实时K线 → 卡片降级处理。
