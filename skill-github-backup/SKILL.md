@@ -33,6 +33,16 @@ git push
   `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/KSOWOVO/workbuddy-skills/contents/`
 - 网络慢时 push 可能 SIGTERM：重试即可，commit 已成功不受影响。
 
+## 如何验证仓库是否真的存在（重要，别被误导）
+⚠️ **不要用本机 curl 访问 github.com 网页来验证**——本机网络访问 github.com 网页不通：走代理 `127.0.0.1:4718` 返回 **502 Bad Gateway**，直连返回 **000 连不上**。会误判成 404。但 `api.github.com` 通（200）、git push 也通（网络路径不同）。
+正确的两种验证方式：
+1. **API**（本机可直连）：
+   - 仓库信息 `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/KSOWOVO/workbuddy-skills`（看 visibility / default_branch）
+   - 文件列表 `.../contents/` 及子目录 `.../contents/<skill名>`
+2. **远程抓取**：用 WebFetch 打开 `https://github.com/KSOWOVO/workbuddy-skills`（走另一条网络路径，能拿到真实页面，含 commit 历史与文件树）。
+
+用户若在浏览器里看到 404，那是**本机网络环境问题，不是仓库问题**——建议换网络（手机热点）/用手机看，或让他打开 API 链接验证：`https://api.github.com/repos/KSOWOVO/workbuddy-skills`。
+
 ## 首次搭建 / 换新机器（备用）
 1. 需要用户提供 GitHub PAT（**repo** 权限，勾 classic token）。
 2. 验证 + 建仓（API 直连，不用 MCP 连接器）：
