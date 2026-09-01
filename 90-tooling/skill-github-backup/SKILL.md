@@ -76,6 +76,8 @@ cd ~/.workbuddy/skills
 git fetch origin main
 git reset --soft FETCH_HEAD   # 用 FETCH_HEAD，origin/main 可能报 unknown revision
 ```
+⚠️ 若 API 推送后 **git fetch 也因网络 502 失败**（本地 HEAD 与云端 hash 不一致），**下次同步前必须先补一次 fetch+reset 对齐**，否则 `git push` 会报 non-fast-forward 被拒。可先记录待办，网络恢复后第一时间执行。
+**目录重组（分类整理）若 git push 持续失败**：可用 GitHub Contents API 全量同步——`GET /git/trees/main?recursive=1` 拿云端文件+sha → 对旧路径逐个 `DELETE`（body 带 sha）→ 对本地 HEAD 新路径逐个 `PUT`（`git ls-tree -r HEAD` + `cat-file` 取内容 base64，blob sha 相同则跳过）→ 全部成功后 fetch+reset 对齐本地。
 
 ## 首次搭建 / 换新机器（备用）
 1. 需要用户提供 GitHub PAT（**repo** 权限，勾 classic token）。
