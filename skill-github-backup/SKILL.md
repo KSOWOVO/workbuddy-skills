@@ -9,7 +9,8 @@ agent_created: true
 ## 目标仓库
 - GitHub 账号：`KSOWOVO`
 - 仓库：`KSOWOVO/workbuddy-skills`（**public**）→ https://github.com/KSOWOVO/workbuddy-skills
-- 本地位置：`~/.workbuddy/skills`（已 git init，分支 `main`，remote 已配）
+- 本地位置：`~/.workbuddy/skills`（已 git init，分支 `main`，remote = 带 token 的 https URL，无 credential.helper → 零弹窗）
+- 云端现有：`.gitignore` + `browser-ocr` / `ima-knowledge-upload` / `pilot-survey-clean` / `skill-github-backup`（本 skill 自身）
 
 ## 核心原则（不可违反）
 1. **只同步 `agent_created: true` 的自创 skill**，不碰系统/市场预装 skill（版权与体积问题）。
@@ -53,5 +54,8 @@ git push -u origin main
 - **WorkBuddy 的 GitHub MCP 连接器是只读受限 integration**：create_repository / push_files / 搜索仓库全被 GitHub 403/Validation Failed 拒绝，**不能用于建仓或推送**。别浪费时间，直接走「本地 git + API + PAT」。
 - 本机默认无任何 GitHub 凭证（无 credential helper / .git-credentials / env token），别指望复用。
 - `.gitignore` 匹配坑：内部迁移文件实际是下划线开头 `_bm_skillid_migration.json`，只写 `.bm_skillid_migration.json`（点开头）匹配不到，必须补 `*_migration.json`。
-- PAT 若明文出现在聊天记录，完成后**提醒用户去 GitHub 删除重生成**；删除后 remote 里 token 失效，需重新配 remote 或更新 .git/config（也可改用 credential 方式）。
+- PAT 若明文出现在聊天记录，完成后**提醒用户去 GitHub 删除重生成**；删除后 remote 里 token 失效，需重新配 remote 或更新 .git/config（**删了 token 记得回来改 remote**）。
 - 检查自创 skill 目录时注意嵌套结构（如 `browser-ocr/browser-ocr/`），find 用 `-name SKILL.md` 从根找。
+- **⚠️ 不要用 `printf ... | git credential approve`**：本机非交互环境下 GCM 会弹 UI 死等，命令挂起直到被 SIGTERM kill。想把 token 交给 credential manager 也别走这条路。
+- **Windows 会弹 "select a credential helper" 弹窗**（manager / wincred / none）：告诉用户选 **manager**（加密存 Windows 凭据管理器）+ 勾「始终保持此选项」；wincred 是 legacy，none 每次都要重输。但**本机实际采用的最优解是「remote URL 带 token + 不设 credential.helper」**——URL 自带凭证时 git 不会再触发 helper，从此零弹窗、零交互。
+- **用户对「自动外发」敏感**：曾中途叫停同步。涉及 push/上传类操作，先确认再执行，别默默后台推；被 kill 的 push 可能只推了一半，恢复后务必用 API 验证云端文件列表。
