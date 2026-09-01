@@ -43,6 +43,28 @@ git push
 
 用户若在浏览器里看到 404，那是**本机网络环境问题，不是仓库问题**——建议换网络（手机热点）/用手机看，或让他打开 API 链接验证：`https://api.github.com/repos/KSOWOVO/workbuddy-skills`。
 
+## 备用通道：git push 报 502 时改用 API 直连（已验证可用）
+现象：本机代理 `127.0.0.1:4718` 对 `github.com:443` **时好时坏**，git push 会偶发失败：
+`fatal: unable to access 'https://github.com/...': CONNECT tunnel failed, response 502`
+（此时 `api.github.com` 往往仍是 200，可走 API 绕过。）
+
+操作步骤：
+1. `GET /repos/KSOWOVO/workbuddy-skills/contents/<文件路径>` 取 `sha`
+2. 本地文件 base64 编码
+3. `PUT /repos/KSOWOVO/workbuddy-skills/contents/<文件路径>`，body = `{message, content, sha}`
+
+关键坑（与 ima COS 上传同源）：**python urllib 在本机会读环境变量代理导致失败**，必须
+- 脚本内 `urllib.request.build_opener(urllib.request.ProxyHandler({}))` 显式禁代理直连
+- 运行时加 `env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY ...`
+- 临时脚本含 token，用完立即 `rm -f` 删掉
+
+推完后**必须对齐本地 git 历史**（否则分叉）：
+```bash
+cd ~/.workbuddy/skills
+git fetch origin main
+git reset --soft FETCH_HEAD   # 用 FETCH_HEAD，origin/main 可能报 unknown revision
+```
+
 ## 首次搭建 / 换新机器（备用）
 1. 需要用户提供 GitHub PAT（**repo** 权限，勾 classic token）。
 2. 验证 + 建仓（API 直连，不用 MCP 连接器）：
