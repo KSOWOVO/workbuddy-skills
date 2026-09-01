@@ -28,6 +28,20 @@ agent_created: true
 6. **修改即覆盖**：对已有 skill 的修改，直接 `git add <分类/技能目录>` + commit + push，git 自动覆盖云端旧版（不用删旧目录、不用建副本）。新建 skill 同理精准 add 该目录即可。
 
 ## 日常同步流程（每新增/更新自创 skill 后执行）
+
+### ⭐ 推荐：一键同步脚本（自动处理 502、自动对齐、不产生遗留项）
+```bash
+# 用受管 python 跑（禁代理环境变量，与脚本内部禁代理一致）
+env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
+  "C:/Users/13662/.workbuddy/binaries/python/versions/3.13.12/python.exe" \
+  ~/.workbuddy/skills/90-tooling/skill-github-backup/scripts/sync_to_github.py \
+  <分类目录>/<skill名> ["commit message"]
+# 示例：
+#   ... sync_to_github.py 90-tooling/skill-github-backup "docs: 更新说明"
+```
+脚本自动完成：扫敏感 → 精准 add+commit → git push（502 自动重试 5 次）→ 全部失败走 api.github.com 兜底 → 最终验证云端 HEAD=本地 HEAD。**用户看不到任何 502/待办/遗留项。**
+
+### 手动流程（脚本不可用时）
 ```bash
 cd ~/.workbuddy/skills
 # 0. 分类整理（每次都做）：确认 <skill名> 已在正确功能域目录
@@ -39,11 +53,12 @@ find <分类目录>/<skill名> -type f | grep -iE "token|secret|credential|\.env
 # 3. 精准暂存（覆盖更新，不加 -A）+ 提交 + 推送
 git add <分类目录>/<skill名>
 git commit -m "feat: sync skill <分类目录>/<skill名>"
-git push
+git push    # 502 就多试几次（网络间歇性）
 ```
 - push 慢/超时：用后台跑（run_in_background），完成后用 API 验证云端文件：
   `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/KSOWOVO/workbuddy-skills/contents/`
 - 网络慢时 push 可能 SIGTERM：重试即可，commit 已成功不受影响。
+- ⚠️ **其他窗口也共享此 git 仓库**：别的模型/窗口可能在更新 skill 后放回根目录路径，导致重复。同步前检查 `git ls-files | grep <skill名>` 是否有根目录与分类目录两份，有则 `git rm -f <根目录重复>` 清理后再同步（内容先合并到分类目录）。
 
 ## 如何验证仓库是否真的存在（重要，别被误导）
 ⚠️ **不要用本机 curl 访问 github.com 网页来验证**——本机网络访问 github.com 网页不通：走代理 `127.0.0.1:4718` 返回 **502 Bad Gateway**，直连返回 **000 连不上**。会误判成 404。但 `api.github.com` 通（200）、git push 也通（网络路径不同）。
