@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Macro · Tech · Gaming Intelligence | 2026-09-01</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --ink:#1f2937; --sub:#6b7280;
+    --line:#e5e7eb;
+    --up:#e02424; --down:#0e9f4f; --flat:#9ca3af;      /* 涨红跌绿（A股惯例） */
+    --over:#e02424; --mid:#d97706; --cheap:#0e9f4f;
+    --blue:#2563eb; --purple:#7c3aed; --cyan:#0891b2; --orange:#ea580c; --green:#059669;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,sans-serif; line-height:1.75; font-size:15px;}
+  .wrap{max-width:1020px; margin:0 auto; padding:0 18px 80px;}
+  header.hero{background:linear-gradient(135deg,#1e293b 0%,#334155 60%,#475569 100%); color:#fff; border-radius:0 0 22px 22px; padding:30px 22px 24px; margin-bottom:20px;}
+  header.hero h1{font-size:20px; letter-spacing:.5px; line-height:1.5;}
+  header.hero .meta{font-size:12.5px; color:#cbd5e1; margin-top:10px; display:flex; flex-wrap:wrap; gap:6px 14px;}
+  header.hero .tag{background:rgba(255,255,255,.12); padding:2px 10px; border-radius:99px; font-size:12px;}
+  .tip{background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:10px; padding:9px 14px; font-size:12.8px; margin:12px 0;}
+  nav.tabs{position:sticky; top:0; z-index:50; background:rgba(255,255,255,.94); backdrop-filter:blur(6px); border:1px solid var(--line); border-radius:99px; padding:6px 8px; margin:14px 0 22px; display:flex; flex-wrap:wrap; gap:4px; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,.05);}
+  nav.tabs a{text-decoration:none; font-size:13px; color:#374151; padding:5px 13px; border-radius:99px; transition:.15s;}
+  nav.tabs a:hover{background:#eef2f7;}
+  section{margin:30px 0;}
+  .sec-head{display:flex; align-items:baseline; gap:10px; margin-bottom:14px; padding-bottom:8px; border-bottom:2px solid var(--line);}
+  .sec-head h2{font-size:19px;}
+  .sec-head .en{font-size:12px; color:var(--sub);}
+  .sec-head .bar{width:5px; height:22px; border-radius:3px; flex:none;}
+  .c-macro .bar{background:var(--blue);} .c-ai .bar{background:var(--purple);} .c-hw .bar{background:var(--cyan);} .c-game .bar{background:var(--orange);} .c-lex .bar{background:var(--green);}
+
+  /* ===== 指数卡片（可点击） ===== */
+  .idx-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:12px;}
+  .idx-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:12px 14px; box-shadow:0 1px 3px rgba(0,0,0,.04); cursor:pointer; transition:.16s; position:relative;}
+  .idx-card:hover{transform:translateY(-2px); box-shadow:0 6px 16px rgba(0,0,0,.09); border-color:#93c5fd;}
+  .idx-card .name{font-size:14.5px; font-weight:700;}
+  .idx-card .en-name{font-size:12px; font-weight:600; color:var(--sub); margin-left:4px;}
+  .idx-card .code{font-size:10.5px; color:var(--sub); margin-left:4px;}
+  .idx-card .row1{display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;}
+  .idx-card .lvl{font-size:18px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .idx-card .chg{font-size:13px; font-weight:700; padding:1px 8px; border-radius:8px; color:#fff;}
+  .up{background:var(--up);} .down{background:var(--down);} .flat{background:var(--flat);}
+  .idx-card .vals{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+  .idx-card .pv{font-size:11.5px; color:var(--sub); background:#f3f4f6; border-radius:6px; padding:1px 7px;}
+  .sig{display:inline-block; font-size:11.5px; font-weight:600; border-radius:6px; padding:2px 8px; margin-top:7px;}
+  .sig-over{color:#fff; background:var(--over);} .sig-mid{color:#fff; background:var(--mid);} .sig-cheap{color:#fff; background:var(--cheap);}
+  .spark{display:block; width:100%; height:34px; margin-top:9px;}
+  .clickhint{position:absolute; top:8px; right:10px; font-size:10.5px; color:#93c5fd; opacity:0; transition:.15s;}
+  .idx-card:hover .clickhint{opacity:1;}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--sub); margin-top:8px; background:#fff; border:1px dashed var(--line); border-radius:10px; padding:8px 12px;}
+  .legend b{font-weight:600;}
+
+  /* ===== 新闻卡片（英文为主） ===== */
+  .news{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; margin-bottom:14px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .news .t{font-size:15.5px; font-weight:800; display:flex; gap:8px; align-items:baseline; flex-wrap:wrap;}
+  .news .t .n{font-size:12px; color:#fff; background:var(--blue); border-radius:6px; padding:1px 8px; flex:none;}
+  .news .t .en-t{font-size:12.5px; color:var(--sub); font-weight:600;}
+  .news .p-en{margin-top:10px; font-size:13.8px; color:#374151; font-family:Georgia,"Times New Roman",serif; line-height:1.85;}
+  .news .cn-box{margin-top:8px; border-top:1px dashed var(--line); padding-top:8px;}
+  .news .cn-toggle{font-size:12px; color:#1d4ed8; cursor:pointer; user-select:none; background:none; border:none; font-weight:700;}
+  .news .p-cn{font-size:13.5px; color:#1e293b; background:#f8fafc; border-left:3px solid #93c5fd; border-radius:0 8px 8px 0; padding:8px 12px; margin-top:6px; display:none;}
+  .news .p-cn.show{display:block;}
+  .news .src{font-size:11.5px; color:var(--sub); margin-top:8px; font-style:italic;}
+  .lbl-en{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:1px; color:#64748b; margin-top:8px;}
+
+  .briefs{list-style:none;}
+  .briefs li{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:8px; font-size:13.8px;}
+  .briefs li .en-b{display:block; font-family:Georgia,serif; color:var(--sub); font-size:12.8px; margin-top:4px;}
+
+  .macro-block{margin-bottom:14px;}
+  .macro-block .h{font-size:12px; font-weight:800; color:var(--sub); letter-spacing:1px; margin-bottom:6px;}
+  .macro-block .p-en{font-family:Georgia,serif; font-size:13.8px; color:#374151; padding:12px 15px; border-left:3px solid #60a5fa; border-radius:0 8px 8px 0; background:#fff;}
+  .macro-block .cn-toggle{font-size:12px; color:#1d4ed8; cursor:pointer; border:none; background:none; font-weight:700; margin-top:6px;}
+  .macro-block .p-cn{font-size:13.5px; background:#f8fafc; border-left:3px solid #93c5fd; border-radius:0 8px 8px 0; padding:10px 14px; margin-top:6px; display:none;}
+  .macro-block .p-cn.show{display:block;}
+
+  table{width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); font-size:13.5px;}
+  th,td{padding:9px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top;}
+  th{background:#f1f5f9; font-size:12.5px; color:#475569;}
+  tr:last-child td{border-bottom:none;}
+
+  /* ===== 模态框（点击指数卡片后弹出走势图） ===== */
+  .modal-mask{position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:100; display:none; align-items:center; justify-content:center; padding:20px;}
+  .modal-mask.show{display:flex;}
+  .modal{background:#fff; border-radius:18px; width:min(640px,96vw); max-height:92vh; overflow:auto; padding:24px 26px; box-shadow:0 20px 60px rgba(0,0,0,.35);}
+  .modal .m-head{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .modal .m-name{font-size:19px; font-weight:800;}
+  .modal .m-code{font-size:12px; color:var(--sub); margin-left:6px;}
+  .modal .m-close{font-size:22px; color:var(--sub); cursor:pointer; border:none; background:none; line-height:1;}
+  .modal .m-chg{font-size:15px; font-weight:800; margin-top:2px;}
+  .modal .m-stats{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
+  .modal .m-pv{font-size:12px; background:#f3f4f6; border-radius:7px; padding:2px 9px; color:#374151;}
+  .modal svg{width:100%; height:230px; margin-top:14px; background:#fbfdff; border-radius:10px; border:1px solid var(--line);}
+  .modal .m-note{font-size:12.8px; color:var(--sub); margin-top:10px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px 12px;}
+
+  /* ===== 词典气泡（选中英文单词弹中文翻译） ===== */
+  #dict-pop{position:fixed; z-index:200; background:#1e293b; color:#f8fafc; border-radius:12px; padding:10px 14px; max-width:340px; font-size:13px; box-shadow:0 10px 30px rgba(0,0,0,.35); display:none; line-height:1.6;}
+  #dict-pop .w{font-weight:800; font-size:14.5px; color:#93c5fd;}
+  #dict-pop .cn{font-size:13.5px; margin-top:2px; color:#fff;}
+  #dict-pop .def{font-size:12px; color:#cbd5e1; margin-top:4px;}
+  #dict-pop .arrow{position:absolute; width:10px; height:10px; background:#1e293b; transform:rotate(45deg); top:-5px; left:20px;}
+  .term{border-bottom:1px dashed #94a3b8; cursor:help;}
+
+  footer{margin-top:34px; padding-top:14px; border-top:1px solid var(--line); font-size:11.8px; color:var(--sub);}
+  .totop{position:fixed; right:18px; bottom:18px; background:#1e293b; color:#fff; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:17px; box-shadow:0 3px 10px rgba(0,0,0,.25); z-index:60;}
+  @media(max-width:640px){ body{font-size:14px;} .news .t{flex-direction:column; gap:2px;} }
+  /* ===== 句子级 hover 联动高亮 ===== */
+  .en-s{transition:background-color .18s ease, box-shadow .18s ease; border-radius:3px; padding:1px 0; cursor:default;}
+  .en-s:hover{background:rgba(37,99,235,.10); box-shadow:0 0 0 2px rgba(37,99,235,.18);}
+  .en-s.hovered{background:rgba(37,99,235,.14); box-shadow:0 0 0 2px rgba(37,99,235,.25);}
+  .cn-s{transition:background-color .18s ease, font-size .18s ease, box-shadow .18s ease; border-radius:3px; padding:1px 0;}
+  .cn-s.lit{background:rgba(14,159,79,.16); box-shadow:0 0 0 2px rgba(14,159,79,.25);}
+  .cn-s.lit.hover-zoom{font-size:1.04em;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>🌐 Global Macro · Tech · Gaming In-Depth Intelligence<br><span style="font-size:12.5px; font-weight:400; color:#cbd5e1;">全球宏观 · 前沿科技 · 游戏全景智库（中文仅用于对照翻译）</span></h1>
+  <div class="meta">
+    <span class="tag">📅 2026-09-01 (Tue)</span>
+    <span class="tag">⏱ ~25 min read</span>
+    <span class="tag">🎓 IELTS Band 6–6.5 target (B1–B2 words)</span>
+    <span class="tag">📊 Data: westock / TDX MCP live</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+<div class="tip">
+🖱️ Select <b>any English word</b> → instant Chinese meaning from built-in dictionary. Select a <b>whole sentence</b> → full-sentence online translation (context-aware).
+🔍 Click any <b>index card</b> → 60-day trend chart, PE-percentile signal & action call.
+</div>
+
+<nav class="tabs">
+  <a href="#s1">📊 Market Overview</a>
+  <a href="#s2">🤖 AI Frontier</a>
+  <a href="#s3">💻 Semis &amp; Hardware</a>
+  <a href="#s4">🎮 Gaming</a>
+  <a href="#s5">📚 Vocabulary</a>
+</nav>
+
+<!-- ================= Section 1 Market ================= -->
+<section id="s1" class="c-macro">
+  <div class="sec-head">
+    <span class="bar"></span>
+    <h2>📊 Market Overview</h2>
+    <span class="en">PE-percentile framework from your knowledge base · click cards for charts</span>
+  </div>
+
+  <div class="legend">
+    <span>📈 <b style="color:var(--up)">Red = up</b> / <b style="color:var(--down)">Green = down</b> (A-share rule)</span>
+    <span>Valuation signal (your 10-yr PE percentile rule): <b style="color:var(--cheap)">Buy zone &lt;30</b> · <b style="color:var(--mid)">Hold 30–70</b> · <b style="color:var(--over)">Trim &gt;70</b> (not related to daily up/down)</span>
+  </div>
+
+  <h3 style="margin:16px 0 10px; font-size:15.5px;">🇨🇳 China Broad-Based Indices <span style="font-size:12px; color:var(--sub);">(intraday · live MCP)</span></h3>
+  <div class="idx-grid" id="grid-cn"></div>
+
+  <h3 style="margin:18px 0 10px; font-size:15.5px;">🌏 HK &amp; Global Indices <span style="font-size:12px; color:var(--sub);">(HK intraday · US 8/31 close)</span></h3>
+  <div class="idx-grid" id="grid-hk"></div>
+  <p class="legend" style="margin-top:10px;">PE = 10-yr percentile, PE-TTM (exchange / Xueqiu / Founder Securities / Wind). CSI1000 percentile ≈ est. Div-low-vol has no live K-line, close only.</p>
+
+  <div class="macro-block" style="margin-top:16px;">
+    <div class="h">EN · What to buy, hold or wait — by your PE rule</div>
+    <div class="p-cn" id="m1c">按你知识库的「PE 十年分位 30/70 定投法」：当前 A 股宽基几乎全线处于高估区（&gt;70 分位）。沪深300 绝对市盈率仅 13.83 倍、看似不贵，但十年分位已回到 72.5%——此刻不是估值模式定投的买点，正确动作是「不追高、等回到 30 分位下方再分批进场」。例外是创业板指（约 46%，正常区）与红利低波（PE 8.59、股息率 4.24%，策略型防御）。科创50 分位高达 92%、单月波动曾达 28%，按知识库提示不适合新手。</div>
+    <button class="cn-toggle" onclick="toggleCn(this,'m1c')" data-label="中文全文翻译">中文全文翻译</button>
+    <div class="p-en" id="m1">Applying your knowledge-base PE rule (buy when the 10-yr PE percentile is below 30, hold between 30–70, trim above 70), almost all A-share broad indices are now in the expensive zone: the CSI 300 looks cheap at 13.8×, but its percentile has climbed back to 72.5%. So this is a waiting area, not an entry point. The exceptions are the ChiNext (≈46, normal) and the dividend low-volatility index (P/E 8.6×, yield 4.24%). The STAR 50 sits at the 92nd percentile with single-month swings near −28% — too risky for beginners.</div>
+  </div>
+
+  <div class="macro-block">
+    <div class="h">EN · Global macro: Fed repricing × energy shock</div>
+    <div class="p-cn" id="m2c">8 月 28 日美联储主席沃什在杰克逊霍尔的首次演讲放弃前瞻指引、放鹰，9 月加息概率从约 35% 飙至 55–60%，2 年期美债跳升 10 基点至 4.35%，黄金盘中跌约 100 美元。8 月 30 日美军空袭伊朗拉腊克岛革命卫队设施（一个月来首次直接交火），布伦特原油大涨 2.71% 至 90.49 美元、WTI +2.83% 至 85.76 美元。标普500 能源板块 +2.10% 独领风骚，通信服务（−1.63%）与公用事业（−1.18%）因久期最长领跌。标普500 前瞻 P/E 约 20 倍、盈利收益率 4.9–5.1%，对 4.65–4.73% 的 10 年期美债，股权风险溢价被压至约 0.3 个百分点——历史极低分位。</div>
+    <button class="cn-toggle" onclick="toggleCn(this,'m2c')" data-label="中文全文翻译">中文全文翻译</button>
+    <div class="p-en" id="m2">This week has two big stories. First, the US central bank (美联储) turned more hawkish (鹰派, wants higher rates). Fed Chair Kevin Warsh spoke at Jackson Hole (杰克逊霍尔) for the first time. He said inflation (通胀) is still too high, so "we have work to do." Now the market thinks there is a 55–60% chance of a rate hike (加息) in September. The 2-year bond yield (收益率) rose 10bp to 4.35%, and gold fell about $100. Second, the US hit Iran's IRGC base on Larak Island on Aug 30 — the first direct fight in a month. Oil jumped: Brent +2.71% to $90.49, WTI +2.83% to $85.76. In the S&P 500, only Energy (+2.10%) went up a lot; Communication Services (−1.63%) and Utilities (−1.18%) fell the most. Why? These sectors are the most sensitive to rate changes. The index trades near 20× future earnings, while the 10-year Treasury yield is 4.65–4.73%. So the reward for owning stocks (equity risk premium, 股权风险溢价) is only ~30bp — one of the thinnest levels in history.</div>
+  </div>
+
+  <div class="macro-block">
+    <div class="h">EN · China: A-shares firm, HK quiet</div>
+    <div class="p-cn" id="m3c">中国资产逆势走强：上证指数 8/31 收涨 0.86% 至 3,986.30，沪深300 +0.35%，成交 2.15 万亿元；传媒、煤炭、软件、硬件、半导体领涨，医药、地产、消费领跌——资金在「AI 应用」与「红利低波」间轮动。政策友好：一线城市下调购房门槛、10 年国债收益率 1.69%。今日（9/1）A股早盘回落，创业板指一度跌近 1.7%、算力硬件领跌，午后企稳。港股连续第七个交易日成交低于 3000 亿港元，观望腾讯业绩。</div>
+    <button class="cn-toggle" onclick="toggleCn(this,'m3c')" data-label="中文全文翻译">中文全文翻译</button>
+    <div class="p-en" id="m3">Chinese assets went against the global risk-off mood: the Shanghai Composite closed up 0.86% at 3,986.30 on 31 Aug, the CSI 300 +0.35% on ¥2.15tn turnover, led by media, coal, software, hardware and chips, while drugs, property and consumer lagged — money rotating between "AI apps" and "dividend low-vol." Policy stays friendly: first-tier cities eased home-buying rules and the 10-yr CGB yield is 1.69%. On Tuesday A-shares pulled back in the morning — the ChiNext fell as much as 1.7% on compute-hardware weakness — then steadied. Hong Kong saw a 7th straight day under HK$300bn turnover, waiting on Tencent's results.</div>
+  </div>
+
+  <h3 style="margin:16px 0 10px; font-size:15.5px;">🚀 Top Sectors &amp; Thematic Indices</h3>
+  <ul class="briefs">
+    <li>🇺🇸 <b>US Energy XLE +2.10%</b> — direct US–Iran clash revived the risk premium: XOM +2.73%, CVX +2.14%, OXY +1.84%<span class="en-b">EN: US strikes rebuilt a short-term supply premium; Brent $90.49 (+2.71%).</span></li>
+    <li>🔬 <b>Philadelphia Semis SOX +0.57% (11,535)</b> — AI memory &amp; leading-edge scarcity (TSMC N3 +15% chatter): Qualcomm +3.83%, Micron +2.77%, Nvidia +1.36%<span class="en-b">EN: Memory scarcity and foundry price-hike talk reasserted pricing power.</span></li>
+    <li>📉 <b>S&amp;P Communication Services −1.63% (weakest)</b> — longest-duration sector hurt most by the rate shock: GOOGL −2.09%, META −0.98%<span class="en-b">EN: The longest-duration sector took the full force of the repricing.</span></li>
+    <li>🇨🇳 <b>Nasdaq Golden Dragon China −2.19%</b> — profit-taking as US yields swing: Alibaba −4.11%, NIO −2.97%<span class="en-b">EN: Profit-taking amid US rate volatility; Alibaba led decliners.</span></li>
+    <li>🇬🇧 <b>UK FTSE 100 +0.29%</b> — energy weight protected it; beat DAX (−1.17%) &amp; CAC (−0.79%)<span class="en-b">EN: An energy-heavy index turned the oil rally into gains.</span></li>
+  </ul>
+</section>
+
+<!-- ================= Section 2 AI ================= -->
+<section id="s2" class="c-ai">
+  <div class="sec-head"><span class="bar"></span><h2>🤖 AI Frontier</h2><span class="en">Artificial Intelligence &amp; Algorithmic Frontier</span></div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.1</span> OpenAI 广告业务 200 天突破 10 亿美元年化收入<span class="en-t">OpenAI Crosses the Advertising Rubicon</span></div>
+    <div class="lbl-en">EN ▼ 选中英文可查中文</div>
+    <div class="p-en">OpenAI announced on 31 August that ChatGPT Ads — piloted in the US in February — has reached a <span class="term">$1 billion annualised revenue run-rate</span> in roughly 200 days, spanning more than 40 countries with tens of thousands of advertisers, with self-serve purchasing now extending to India, Europe, the Middle East and North Africa. The layer monetises a base of over one billion weekly active users, chiefly across the free and "Go" tiers. The company insists placements remain segregated from model answers, that advertisers cannot access private conversations, and that early campaign data (a 3× return on ad spend within 28 days; over 80% of ad-driven traffic from new customers) substantiates the economics. Strategically, the milestone reads as IPO preparation: against a reported valuation near $852 billion, OpenAI must evidence a fourth revenue engine beyond subscriptions, enterprise and API — particularly as rival Anthropic has publicly disparaged the model. Preserving conversational trust whilst industrialising attention monetisation will define the platform's next phase.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n21')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n21">OpenAI 于 8 月 31 日宣布，ChatGPT 广告（今年 2 月在美国试运营）在约 200 天内即达到 10 亿美元年化收入运行率（annualised revenue run-rate），覆盖 40 多个国家，拥有数万家广告主，自助购买现已扩展至印度、欧洲、中东与北非。该变现层建立在超过 10 亿周活跃用户的庞大基础之上，主要面向免费用户与 "Go" 订阅层级。公司坚称广告位与模型回答保持隔离、广告主无法访问用户的私人对话，并且早期投放数据（某电商客户 28 天内 3 倍广告支出回报率、超 80% 的广告导流来自新客户）已足以支撑其单位经济模型。从战略上看，这一里程碑更像是为 IPO 作准备：在据报约 8520 亿美元的估值之下，OpenAI 必须证明在订阅、企业服务与 API 之外，第四条收入引擎同样成立——尤其是其对手 Anthropic 公开抨击了这一广告模式。如何在工业化注意力变现的同时守住对话信任，将定义该平台的下一阶段。</div></div>
+    <div class="src">Source: CNBC / 优分析, 31 Aug</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.2</span> OpenAI 自研推理芯片 Jalapeño 首秀基准<span class="en-t">OpenAI Benchmarks Its "Jalapeño" Inference Silicon</span></div>
+    <div class="p-en">At the Hot Chips conference, OpenAI unveiled first benchmark results for its custom inference accelerator, codenamed <span class="term">Jalapeño</span>: on the InferenceX suite it reports higher tokens-per-user and superior throughput per kilowatt than current state-of-the-art silicon, including Nvidia's Blackwell. Hardware chief Richard Ho framed the achievement in energy terms — serving more workloads per unit of power while truncating latency, decisive as data-centre power becomes the binding constraint on frontier deployment. The move epitomises the internalisation of silicon design among leading model labs, echoing Google's TPU lineage and Amazon's Trainium programme. For incumbents the implication is twofold: custom accelerators erode the merchant-market moat that accrued to Nvidia, yet they validate the durability of AI compute demand. Jalapeño's production timeline and software maturity remain undisclosed, and benchmark provenance — rather than headline efficiency claims — will determine its standing.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n22')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n22">在 Hot Chips 大会上，OpenAI 首次公布了其自研推理加速器（代号 Jalapeño）的基准测试结果：在 InferenceX 套件上，每用户产出 token 数与每千瓦吞吐量均优于当前业界顶级硅片，包括英伟达的 Blackwell 架构。硬件负责人 Richard Ho 用能源效率来定义这一突破——在单位功耗下服务更多工作负载、同时降低延迟；在数据中心电力成为前沿部署的硬约束时，这一指标具有决定性意义。这一举措是头部模型实验室内部化芯片设计的缩影，呼应了谷歌 TPU 谱系与亚马逊 Trainium 计划。对在位巨头而言，这意味着一把双刃剑：自研加速器侵蚀了英伟达多年来累积的商用市场护城河（moat），但同时验证了 AI 算力需求的长期性。Jalapeño 的量产时间表和软件栈成熟度均尚未披露，决定其江湖地位的，将是基准测试的可来源来源（provenance）而非头条宣传的效率数字。</div></div>
+    <div class="src">Source: Hot Chips 2026 / The AI Brief, 1 Sep</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.3</span> Anthropic 统一 Claude 记忆：聊天与 Cowork 无缝衔接<span class="en-t">Anthropic Unifies Claude's Memory</span></div>
+    <div class="p-en">Anthropic has unified the <span class="term">persistent-memory system</span> underpinning Claude's chat and its agentic Cowork environment, eliminating the friction of re-establishing project context when migrating between web, desktop and mobile surfaces. Rather than summarising at session termination, Claude now identifies and logs task-relevant information dynamically as conversations unfold; the continuous-memory integration is enabled by default across Free, Pro and Max tiers. Architecturally, the update signals a maturation of the agent paradigm — ephemeral, context-window-bound reasoning is yielding to persistent, queryable state that endures across sessions. This follows the August launch of Claude Sonnet 5 ($2/$10 per million tokens) and a model card conceding its cyber-task capability sits below the Opus line. Competition is visibly shifting from headline benchmarks toward durable agent memory, permissioned execution and operational safety.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n23')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n23">Anthropic 统一了支撑 Claude 对话聊天与其智能体（agentic）环境 Cowork 的持久记忆系统，消除了用户在网页、桌面和移动端之间切换时需要重新建立项目上下文的摩擦。Claude 不再在会话结束时进行总结，而是在对话展开过程中动态识别并记录与任务相关的信息；该"持续性记忆"集成默认对 Free、Pro 与 Max 全部订阅层级开放。从架构上看，这次更新标志着智能体（agent）范式的成熟——短暂的、受上下文窗口约束的推理，正让位于跨会话持久存在、可查询的状态。这一更新紧随 8 月发布的 Claude Sonnet 5（输入/输出每百万 token 各 2/10 美元）以及其模型卡承认该版本的网络攻击任务能力低于 Opus 系列。竞争重心正从头条基准分数明显转向持久的智能体记忆、受权限控制的执行以及运营安全。</div></div>
+    <div class="src">Source: The AI Brief, 1 Sep</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.4</span> OpenClaw 2.0：长期记忆与多 Agent 协作<span class="en-t">OpenClaw 2.0: Memory and Multi-Agent Collaboration</span></div>
+    <div class="p-en">The open-source personal-agent project OpenClaw delivered its largest update on 31 August — version 2026.8.1, branded "OpenClaw 2.0" — pivoting from capability accretion toward production-grade foundations: an overhauled installation flow that auto-detects subscriptions, API keys and local models; an Active Memory subsystem with background consolidation for durable long-term memory; and a hardened security layer spanning credential protection, approval limits and audit trails. More consequentially, 2.0 extends beyond the single-user paradigm with Shared Cloud Sessions, enabling teams to collaborate on tasks and migrate sessions between local devices, paired machines and cloud workers. As proprietary assistants deepen their walled-garden integrations, OpenClaw — the fastest-growing repository in GitHub's history — positions itself as a credible, community-governed counterweight in the agent stack, with memory and security as its differentiating moats.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n24')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n24">开源个人智能体（agent）项目 OpenClaw 于 8 月 31 日发布了其史上最大的一次更新——版本 2026.8.1，冠以"OpenClaw 2.0"之名——从单纯堆砌能力转向生产级基础设施：彻底重构的安装流程可自动识别订阅、API 密钥与本地模型；带后台合并机制的 Active Memory 子系统用于构建持久的长期记忆；以及一道强化了的安全层，涵盖涵盖凭证保护、自动化任务授权限制与安全审计。更为深远的是，2.0 超越了单机用户范式：新增的 Shared Cloud Sessions（共享云会话）使团队成员能够协同处理任务，并在本地设备、配对机器与云端 Worker 之间自由迁移会话。当专有助手（Claude、Gemini、ChatGPT）不断加深其围墙花园式集成之际，作为 GitHub 历史上增长最快的开源项目，OpenClaw 定位为智能体技术栈中一股由社区治理的、可信赖的制衡力量，其差异化护城河正是记忆与安全。</div></div>
+    <div class="src">Source: 每日经济新闻 / GitHub, 31 Aug–1 Sep</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.5</span> EvoHarness-RL：80 亿参数小模型追平 Claude Opus 4.5<span class="en-t">An 8B Model Matching a Frontier Flagship</span></div>
+    <div class="p-en">Researchers from Meta AI and the University of Illinois Urbana-Champaign have shown that a compact open-weight model can match a frontier closed model on long-horizon agentic benchmarks — not through parameter scaling, but by re-engineering the agent's external "runtime harness." EvoHarness-RL trains Qwen3-8B to a 96.9% success rate on ALFWorld's seen-task split, marginally eclipsing Claude Opus 4.5's 96.4%, a +49.0-point gain over the base ReAct baseline (47.9%). The method organises external state into Belief, Progress and Experience, manipulated via four meta-actions (track, commit, recall, note). Crucially, the harness also benefits frozen frontier models at prompt time: it raised GPT-5's success by 25.7 points and lifted Claude Opus 4.5 from 96.4% to 98.5%. If agent scaffolding rather than intrinsic scale is the binding variable, the compute intensity of agentic deployment may decouple from frontier-model licensing — a structural cost signal for the industry.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n25')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n25">来自 Meta AI 与伊利诺伊大学厄巴纳-香槟分校（UIUC）的研究者证明：紧凑的开源权重模型能够在长程智能体基准上比肩前沿闭源模型——其秘诀不是堆参数，而是重构智能体的外部"运行时脚手架"（runtime harness）。EvoHarness-RL 将 Qwen3-8B 在 ALFWorld 已见任务划分上的成功率训练至 96.9%，略胜 Claude Opus 4.5 的 96.4%，相对基础 ReAct 基线（47.9%）提升 49.0 个百分点。该方法将外部状态组织为三类：信念（Belief）、进度（Progress）与经验（Experience），并通过四个元动作（meta-actions）——track、commit、recall、note——进行操作。关键在于，这套脚手架对冻结的前沿模型在提示词阶段同样奏效：它使 GPT-5 的成功率提升 25.7 个百分点，并将 Claude Opus 4.5 从 96.4% 推升至 98.5%。如果决定长程任务表现的真正瓶颈是智能体脚手架（agent scaffolding）而非模型本身的规模，那么智能体部署的算力强度可能与前沿模型的授权成本脱钩——这是对整个行业的结构性成本信号。</div></div>
+    <div class="src">Source: Machine Herald / arXiv, 28 Aug</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">2.6</span> 连续空间推理与视觉 Token 压缩<span class="en-t">Continuous-Space Reasoning and Token-Efficient Inference</span></div>
+    <div class="p-en">Two papers attack the dominant cost axes of modern inference. "A Model with No Head and Many Thoughts" (arXiv 2608.31069, EMNLP 2026 Findings, posted 31 August) introduces Soft Latent Thinking, which replaces the language-model head with a lightweight projector during reasoning, enabling autoregressive rollout in continuous embedding space — reasoning steps are no longer forced through discrete tokenisation. On DeepSeek-Qwen-1.5B and LLaMA-3.2-3B it improves pass@k across all k while cutting per-step compute. Complementing this, PACE (arXiv 2608.27206) tackles vision-language inference latency: integrated into Qwen2.5-VL-7B, it preserves 93.8% of performance using only 10% of visual tokens, with a 3.1× speedup in time-to-first-token. Together they foreshadow an efficiency race in which algorithmic frugality substitutes for raw FLOPs.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n26')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n26">两篇论文分别攻击了现代推理的两个主要成本维度。《A Model with No Head and Many Thoughts》（arXiv 2608.31069，EMNLP 2026 Findings，8 月 31 日挂网）提出 Soft Latent Thinking（软潜在思维）：在推理阶段用轻量级投影器取代语言模型头（LM head），使自回归展开在连续的嵌入空间内进行——推理步骤不再被迫经过离散 token 化。在 DeepSeek-Qwen-1.5B 与 LLaMA-3.2-3B 上，pass@k 在所有 k 值下均有提升，且单步算力显著下降。与之互补，PACE（arXiv 2608.27206）瞄准视觉语言模型的推理延迟：将其集成到 Qwen2.5-VL-7B 中，仅用 10% 的视觉 token 即保留 93.8% 的性能，首 token 时间（time-to-first-token, TTFT）加速 3.1 倍。两项工作共同预示了一场效率竞赛：算法层面的节俭正在替代原始 FLOPs（浮点运算次数）成为新的竞争维度。</div></div>
+    <div class="src">Source: arXiv 2608.31069 / 2608.27206</div>
+  </div>
+
+  <h3 style="margin:16px 0 10px; font-size:15.5px;">⚡ More AI Headlines</h3>
+  <ul class="briefs">
+    <li>🧪 <b>DeepMind 双盲评测试点（8/27）</b>：首个加密环境下的前沿专有模型双盲基准测试，直击「基准泄漏」痛点<span class="en-b">EN: First cryptographically-sealed double-blind evaluation of proprietary frontier models.</span></li>
+    <li>🇨🇳 <b>阿里 Qwen3.8-Flash-Next（8/27）</b>：125B 总参、6B 激活的稀疏 MoE，Qwen4 架构预览，训练成本降约 90%；智谱 GLM-5.3-Flash（Ox-Alpha）：原生多模态、MIT 协议、全国产算力<span class="en-b">EN: Alibaba's 125B/6B-active sparse MoE preview of Qwen4; Zhipu's MIT-licensed domestic-chip native multimodal model.</span></li>
+    <li>❤️ <b>AI 心电筛查（9/1）</b>：2 秒心电图识别心衰（81%）与瓣膜病（90%），6.7 万患者临床试验<span class="en-b">EN: A two-second ECG screening tool validated on 67,000 US patients.</span></li>
+    <li>💰 <b>Stability AI 7600 万美元 B 轮</b>：环球、索尼音乐、华纳音乐、EA、AMD Ventures 参投；Agent 搜索新贵 Keenable 获 Accel 领投 2600 万美元<span class="en-b">EN: Media-heavy Series B for Stability AI; Accel-backed agent-search startup Keenable.</span></li>
+    <li>🤖 <b>人形机器人（Counterpoint）</b>：中国厂商 2026 上半年占全球出货 86%（22,000 台）<span class="en-b">EN: Chinese makers captured 86% of global humanoid shipments in H1 2026.</span></li>
+  </ul>
+</section>
+
+<!-- ================= Section 3 硬件 ================= -->
+<section id="s3" class="c-hw">
+  <div class="sec-head"><span class="bar"></span><h2>💻 Semis &amp; Hardware</h2><span class="en">Enterprise Tech, Silicon &amp; Infrastructure</span></div>
+
+  <div class="news">
+    <div class="t"><span class="n">3.1</span> 苹果换帅：特努斯时代与 AI 必答题<span class="en-t">Apple's Succession Day and the AI Imperative</span></div>
+    <div class="p-en">On 1 September, John Ternus — the 51-year-old hardware-engineering chief with 25 years at Apple — formally assumed the chief-executive role, while Tim Cook transitioned to executive chairman after a record 15-year tenure, retaining global-policy engagement. The transfer arrives at an inflection point for the $4.6-trillion conglomerate: Ternus's first major event convenes 9 September, expected to unveil a foldable iPhone Ultra and the iPhone 18 Pro line. Yet the strategic centre of gravity is unmistakably AI. Apple's laggard position has been costly: former AI chief John Giannandrea departed in April 2026, Siri suffered repeated delays, and an August reorganisation eliminated more than 200 roles across Siri, Vision Pro and related teams. The imminent deployment of a rebuilt Siri AI, benchmarked directly against ChatGPT, constitutes the first credibility test of the Ternus era; a parallel legal escalation — Apple accusing OpenAI of trade-secret misappropriation and evidence destruction — compounds the pressure. Shares fell 0.89% on 31 August: investors await product evidence rather than managerial theatre.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n31')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n31">9 月 1 日，现年 51 岁、在苹果任职 25 年的硬件工程负责人约翰·特努斯（John Ternus）正式接任首席执行官一职；而蒂姆·库克（Tim Cook）在创下纪录的 15 年任期后转任执行董事长，继续负责全球政策沟通。这次权力交接发生在这家市值 4.6 万亿美元的巨头的转折点上：特努斯上任后的首场大型发布会定于 9 月 9 日，预计将推出可折叠 iPhone Ultra 以及 iPhone 18 Pro 系列。然而战略重心毫无疑问地落在了 AI 上——苹果在生成式 AI 上的掉队代价沉重：前 AI 负责人 John Giannandrea 于 2026 年 4 月离职，Siri 多次延迟，8 月的一次重组更是在 Siri、Vision Pro 与相关团队中裁撤了 200 多个岗位。即将上线的重新打造的 Siri AI 将被直接与 ChatGPT 对标，这是特努斯时代的首个信誉试金石；与此同时一场并行的法律纠纷——苹果指控 OpenAI 涉嫌窃取商业秘密并销毁证据——进一步加剧了压力。8 月 31 日苹果股价收跌 0.89%：投资人等待的是产品本身的实绩，而非管理层的话术。</div></div>
+    <div class="src">Source: Bloomberg / 澎湃新闻 / 北京日报, 1 Sep</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">3.2</span> 台积电 2nm 量产与代工涨价超级周期<span class="en-t">TSMC's 2nm Monopoly and the Foundry Price-Supercycle</span></div>
+    <div class="p-en">TSMC has commenced volume production of its first-generation 2-nanometre (N2) gate-all-around nanosheet process across Fab 20 (Hsinchu) and Fab 22 (Kaohsiung), cementing a de facto monopoly on the industry's most advanced node. On 25 August Apple unveiled the M6, the first commercial 2nm silicon, with up to a 4.8× acceleration in on-device LLM execution. The commercial context is a pricing-power supercycle: after Samsung led with 10–15% increases on N4/N5 in July, TSMC executed a ~15% uplift on constrained N3 output for H2 2026, plans 5–10% further advances across N2/N3/N5 by early 2027, and is imposing ~10% catch-up increases on mature nodes (N12+) unpriced for three years. A single N2 wafer now commands ~$30,000. Q2 revenue reached $40.2 billion with gross margin of 67.7% and operating margin of 60.3%; 2026 capex guidance has been raised to as much as $64 billion, with an additional $100 billion committed to Arizona (total $265 billion, ten fabs). With a 73% global foundry share versus Samsung's 7%, this pricing power is structurally entrenched for at least another node cycle.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n32')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n32">台积电（TSMC）已在新竹 Fab 20 与高雄 Fab 22 双线量产其第一代 2 纳米（N2）全环绕栅极（GAA, gate-all-around）纳米片工艺，奠定了其在业界最先进制程节点上的事实垄断地位。8 月 25 日苹果发布了 M6——首款商用 2nm 硅片——端侧大语言模型执行速度最高提升 4.8 倍。商业层面这是一轮定价权超级周期：在三星于 7 月率先对 N4/N5 提价 10–15% 之后，台积电对下半年紧缺的 N3 产能执行了约 15% 的涨价，计划在 2027 年初再对 N2/N3/N5 进一步提价 5–10%，并对三年未涨价的成熟制程（N12 及以上）一次性补涨约 10%。单片 N2 晶圆起价约 3 万美元（相比 N3 溢价 10–20%）。Q2 营收达 402 亿美元，毛利率 67.7%、营业利润率 60.3%；2026 年资本开支（capex）指引已上调至最高 640 亿美元，并向亚利桑那追加 1000 亿美元（累计 2650 亿美元、10 座晶圆厂）。凭借 73% 的全球代工市占率（vs. 三星 7%），这种定价权至少还能再维持一个制程节点周期。</div></div>
+    <div class="src">Source: DailyStock / 华尔街见闻 / 爱集微</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">3.3</span> 英伟达纵向整合：Hugging Face 与联发科<span class="en-t">Nvidia's Verticalisation Offensive</span></div>
+    <div class="p-en">Nvidia's post-earnings strategy has pivoted decisively toward acquiring the layers above its silicon. Reports this week converged on a $12.9–13.0 billion acquisition of Hugging Face — the de facto "GitHub of AI" and principal distribution channel for open-weight models — a price of roughly 85× its ~$150 million annualised revenue, comprehensible only as payment for ecosystem control: ownership of the hub where developer demand becomes visible before it reaches Nvidia's hardware. On 31 August, Nvidia and MediaTek jointly announced a $3.5 billion convertible-bond investment, with MediaTek set to adopt NVLink Fusion and NVHBM interconnect technologies — a flanking move against hyperscalers' in-house silicon. CEO Jensen Huang disclosed supply-side commitments escalated to $279 billion and negotiations for a ~$250 billion guarantee on a 10-gigawatt OpenAI data centre in Ohio. The antitrust shadow is equally instructive: Nvidia paused components of its AI Compute Partnership financing amid internal compliance concerns — verticalisation at this scale invites regulatory friction even as it consolidates the AI infrastructure franchise.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n33')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n33">财报季后，英伟达（Nvidia）的战略重心已明确转向收购其芯片之上的各层生态。本周多家媒体的报道不约而同地指向一笔 129–130 亿美元收购 Hugging Face 的交易——作为事实上的"AI 版 GitHub"、开源权重模型的主要分发渠道——估值相当于其约 1.5 亿美元年化收入的 85 倍，这一溢价只能被理解为购买生态控制权的代价：拥有这个开发者需求最先在此显现、再传导至英伟达硬件的中枢。8 月 31 日，英伟达与联发科联合宣布 35 亿美元可转债投资，联发科将引入 NVLink Fusion 与 NVHBM 互联技术——这是针对超大规模云厂商（hyperscaler）自研芯片计划的侧翼动作。CEO 黄仁勋（Jensen Huang）披露供应侧承诺已升至 2790 亿美元，并正洽谈为俄亥俄州一座 10 吉瓦的 OpenAI 数据中心提供约 2500 亿美元担保。反垄断阴影同样值得警惕：英伟达因内部合规顾虑暂停了 AI Compute Partnership（AI 算力合作计划）融资的部分组件——如此体量的纵向整合（vertical integration）即便巩固了 AI 基础设施的版图，也必然招致监管摩擦。</div></div>
+    <div class="src">Source: The Information / Ars Technica / 腾讯新闻</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">3.4</span> 存储涨价潮：AI 需求重塑内存定价<span class="en-t">The Memory Crunch Reshapes DRAM Pricing</span></div>
+    <div class="p-en">The semiconductor component most visibly repriced by the AI buildout is memory. Data-centre demand for high-bandwidth and conventional DRAM has drained global supply, and the surge is cascading into adjacent markets: Micron advanced 2.77% on 31 August and, per S3 Partners, carries the largest single-day value-at-risk among large caps ($1.62 billion). The constraint has reached software design — Google published stricter Android memory-management guidance in direct response to the AI-driven RAM crunch — while SK Hynix's workforce rejected a preliminary wage agreement amid unprecedented order visibility, and Samsung disclosed H1 R&D expenditure exceeding KRW 27 trillion in its race to close the HBM gap. Nvidia's $279 billion in supply commitments, heavily weighted toward memory procurement, quantifies the scarcity premium. Strategically, the memory cycle has inverted from capacity-led cyclicality toward demand-led structural tightness: pricing power flows to the incumbents while wafer costs propagate upward — a tailwind for foundry margins, a headwind for device OEMs.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n34')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n34">被 AI 建设大潮重新定价得最明显的半导体组件是内存。数据中心对高带宽内存（HBM）与传统 DRAM 的需求已抽干全球供给，涨价潮正向相邻市场传导：美光（Micron）8 月 31 日上涨 2.77%，且根据 S3 Partners，其单日风险价值（VaR）在大型科技股中居首（16.2 亿美元）。这一约束已触及软件设计层面——谷歌发布了更严格的 Android 内存管理指南，正是为应对 AI 驱动的内存紧缺——与此同时，SK 海力士的工会因订单能见度史无前例而否决了一份临时薪资协议；三星则披露上半年研发支出超 27 万亿韩元，全力追赶 HBM 差距。英伟达 2790 亿美元的供应承诺中，内存采购占了大头，这本身就是稀缺溢价（scarcity premium）的量化体现。战略上看，内存周期已从过去"产能驱动"的商品属性，逆转为"需求驱动"的结构性紧张：定价权向在位巨头集中，晶圆成本沿产业链向上游传导——这利好代工厂利润率（tailwind），而利空终端设备 OEM（headwind）。</div></div>
+    <div class="src">Source: TechCrunch / S3 Partners / 网易科技</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">3.5</span> 中美半导体脱钩升级：DUV 管制与机器人关税<span class="en-t">US–China Decoupling Intensifies</span></div>
+    <div class="p-en">Geopolitical friction deepened on multiple fronts. Washington is pressing the Netherlands to extend export restrictions to DUV lithography — a direct escalation beyond the existing EUV regime — while the FCC's Covered List has been expanded to encompass foreign-manufactured robotic hardware and drones, with new import tariffs on humanoid robotics. The policy reflex confronts a reality quantified by Counterpoint: Chinese manufacturers supplied 86% of global humanoid-robot shipments (22,000 units) in H1 2026, leveraging mature supply chains that regulatory barriers will not dislodge quickly. The industrial logic is now tripartite — US–EU–Asia decoupling extends beyond advanced logic into equipment, packaging, robotics and connectivity. For enterprise buyers, the consequence is a bifurcated supply architecture: redundant toolchains, dual-sourcing mandates and heightened compliance costs that raise the structural cost base of global hardware precisely as AI-driven demand pushes utilisation to record levels.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n35')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n35">地缘政治摩擦在多条战线同时加深。华盛顿正向荷兰施压，要求其将出口管制扩展到 DUV 光刻设备——这是对既有 EUV 管制框架的直接升级——与此同时美国联邦通信委员会（FCC）的"覆盖清单"（Covered List）已扩大至涵盖外国制造的机器人硬件与无人机，并对人形机器人加征新进口关税。政策的应激反应所面临的现实，被 Counterpoint 数据量化：2026 年上半年中国厂商供应了全球 86%（22,000 台）的人形机器人出货量，凭借成熟的供应链，监管壁垒短期内难以撼动。产业逻辑已演化为"三轨脱钩"（decoupling）：美-欧-亚脱钩不再局限于先进逻辑芯片，而是延伸至设备、封装、机器人与互联。对企业买家而言，后果是双轨制（bifurcated）供应架构：冗余工具链、双源采购（dual-sourcing）要求与更高的合规（compliance）成本——这些系统性地抬升了全球硬件供应的结构性成本基础，恰逢 AI 需求将产能利用率推向历史峰值之际。</div></div>
+    <div class="src">Source: TechSugar / Counterpoint / Reuters</div>
+  </div>
+
+  <h3 style="margin:16px 0 10px; font-size:15.5px;">⚙️ Hardware Briefs</h3>
+  <ul class="briefs">
+    <li>🚀 <b>英伟达 Vera CPU 开始规模出货（8/28）</b>：首款为 AI 智能体打造的处理器；OpenAI 确认采购数万台 Mac 用于智能体训练<span class="en-b">EN: Vera CPU volume shipment; OpenAI's mass Mac purchases strained Apple enterprise supply.</span></li>
+    <li>🔩 <b>英特尔</b>：Nova Lake 桌面处理器（2027 初）将在 18A 之外向台积电采购 N2X；Diamond Rapids 至强可扩展至 256 核<span class="en-b">EN: Nova Lake will dual-source TSMC N2X; Diamond Rapids scales to 256 cores.</span></li>
+    <li>🦾 <b>SiFive BigSky</b>：全球首款企业级 2U 机架式 RISC-V 服务器开发平台<span class="en-b">EN: First enterprise-class rack-mountable RISC-V server platform.</span></li>
+  </ul>
+</section>
+
+<!-- ================= Section 4 游戏 ================= -->
+<section id="s4" class="c-game">
+  <div class="sec-head"><span class="bar"></span><h2>🎮 Gaming Industry</h2><span class="en">Interactive Entertainment &amp; Gaming Economics</span></div>
+
+  <div class="news">
+    <div class="t"><span class="n">4.1</span> GTA6 营销闪电战：预售、Netflix 与十一月档期<span class="en-t">GTA VI's Marketing Blitz</span></div>
+    <div class="p-en">Rockstar's ~27-minute "Extended Look" for Grand Theft Auto VI — captured entirely on PS5 — has converted cultural anticipation into hard commercial metrics. Streaming via Netflix, the showcase lifted the platform's web traffic roughly 125% and US mobile viewership 35% against a typical day (per Sensor Tower), topping its movie charts, while Take-Two traded ~2.5% higher premarket on bullish Morgan Stanley and JPMorgan notes. Newzoo estimates global digital pre-orders near $260 million, models a launch-week revenue midpoint of ~$4.5 billion, and calculates that console full-game spending rises 17.5% this year on GTA VI's back — without it, 2026 console revenue would be flat year-on-year. These figures contextualise the $79.99/$99.99 two-tier pricing (a $10 premium over industry norms), the disc-less physical SKU (codes in-box, pre-load from 12 November), and Take-Two's fiscal-2027 guidance embedding "high confidence" in the 19 November launch. The competitive calendar has reorganised around the title: most would-be Q4 releases vacated the November window — Cloud Imperium has even delayed Squadron 42 to 2027, its CEO conceding "there is no way I want to launch into the attention buzz saw of GTA 6." GTA VI functions simultaneously as demand barometer, pricing experiment and proof that blockbuster supply still commands attention.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n41')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n41">Rockstar 约 27 分钟、全程在 PS5 上录制的《侠盗猎车手 VI》（GTA VI）"Extended Look"（超长前瞻）演示，已将文化层面的期待转化为实打实的商业指标。经 Netflix 播出后，平台网页访问量较平常暴增约 125%、美国移动端观看量上升 35%（Sensor Tower 数据），登顶其电影榜；母公司 Take-Two 在盘前交易中上涨约 2.5%，摩根士丹利（Morgan Stanley）与摩根大通（JPMorgan）给出看多评级。Newzoo 估算全球数字版预售已达约 2.6 亿美元，建模出约 45 亿美元的首发周收入中枢，并测算在 GTA VI 带动下今年主机全价游戏支出将增长 17.5%——若没有它，2026 年主机收入将与去年持平。这些数字为 79.99 / 99.99 美元的两档定价（比行业惯例上浮 10 美元）、"无光盘"实体版（盒内装下载码、11 月 12 日起预载）、以及 Take-Two 将 11 月 19 日发售纳入 2027 财年指引并以"高置信度"押注的决策提供了支撑。行业档期已围绕这款作品重新洗牌：大多数原定 Q4 发售的作品主动让出了 11 月窗口——Cloud Imperium 甚至将《星际公民》衍生作 Squadron 42 推迟至 2027 年，其 CEO 坦言"绝不想撞上 GTA 6 这台注意力绞肉机"。《GTA VI》同时扮演着需求温度计（barometer）、定价实验场以及"超级供给依然能占据注意力"的活样本。</div></div>
+    <div class="src">Source: GamesIndustry.biz / Sensor Tower / Newzoo / CNBC</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">4.2</span> EA 私有化之后：550 亿美元交易与 200 亿债务<span class="en-t">EA's Post-Privatisation Reality</span></div>
+    <div class="p-en">Electronic Arts' record $55 billion buyout — led by Saudi Arabia's Public Investment Fund — formally closed on 4 August, converting the publisher into a private entity in which PIF rolled its prior 9.9% stake into a 93.4% controlling position, flanked by Silver Lake (5.5%) and Affinity Partners (1.1%). The financial architecture is now the strategic narrative: the company reportedly carries ~$20 billion in acquisition debt, a leverage profile that structurally rewards predictable monetisation over experimentation. Layoff anxieties are circulating as debt service disciplines cost structures, while the private-market veil reduces quarterly earnings theatre. The transaction is the largest in a sequence of sovereign-wealth and private-equity incursions into Western gaming — following Savvy Games Group's $6.75 billion acquisition of Moonton from ByteDance — and reopens questions of IP governance, talent retention and the fungibility of cultural assets across sovereign borders. Mature publishers are increasingly treated as cash-flow assets suited to leveraged ownership rather than growth equities.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n42')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n42">电子艺界（EA）创纪录的 550 亿美元收购——由沙特公共投资基金（PIF）领衔——已于 8 月 4 日正式交割，PIF 将此前持有的 9.9% 股份转股为 93.4% 的控股权，银湖（Silver Lake, 5.5%）与 Affinity Partners（1.1%）同席并行。财务架构本身如今成为战略叙事：公司据传背负约 200 亿美元并购债务，这种杠杆（leverage）水平结构性上奖励"可预测的变现（monetisation）"而非"实验性探索"。伴随偿债压力倒逼成本结构精简，裁员焦虑已在业内弥漫，而私有化帷幕的落下则弱化了季度财报的戏剧性。这笔交易是主权财富基金与私募资本系统性进入西方游戏业的最新、也是最大一例——继 Savvy Games Group 以 67.5 亿美元从字节跳动手中收购沐瞳（Moonton）之后——并重新打开了关于 IP 治理、人才留存，以及文化资产跨主权可流通性（fungibility）的一系列疑问。成熟的发行商正日益被当作适合杠杆持有的现金流资产，而非成长股来对待。</div></div>
+    <div class="src">Source: Tech Insider / Best-Games.io</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">4.3</span> 索尼音乐收购 GungHo 22.9% 股权：IP × 长线运营<span class="en-t">Sony Music Acquires 22.9% of GungHo</span></div>
+    <div class="p-en">Sony Music Entertainment Japan has agreed to acquire 12,006,500 GungHo Online Entertainment shares from SON Financial at ¥2,385 each — approximately ¥28.64 billion in aggregate — securing a 22.9% economic interest (≈23.29% voting) and the position of largest shareholder, with closing targeted for 30 December subject to Japan Fair Trade Commission approval. The transaction institutionalises a capital-and-business alliance exploring co-development across mobile, console and PC, and — more consequentially — collaborations binding Sony Music's artist and anime IP to franchises such as Puzzle & Dragons, whose decade-old revenue engine has plateaued amid mobile saturation. The deal exemplifies a broader industrial convergence: as live-ops economics mature and user-acquisition costs climb, music-and-entertainment conglomerates treat gaming not as a separate vertical but as a distribution layer for IP — arbitraging between declining attention scarcity in music and persistent engagement depth in games. For GungHo, access to Sony's global marketing apparatus constitutes a renewal option on its flagship franchise.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n43')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n43">索尼音乐娱乐日本公司（Sony Music Entertainment Japan）已同意以每股 2,385 日元的价格，从 SON Financial 手中收购 GungHo Online Entertainment 12,006,500 股——合计约 286.4 亿日元——取得 22.9% 的经济权益（约 23.29% 投票权）并成为最大股东，交易预计于 12 月 30 日完成、待日本公正交易委员会（JFTC）批准。这笔交易将"资本+业务联盟"制度化：双方将在移动、主机和 PC 端探索联合开发运营，更深远的是将索尼音乐旗下的艺人 IP 与动漫 IP 与《智龙迷城》（Puzzle & Dragons）等长青作品绑定——后者的十年期收入引擎已在手游市场饱和中陷入停滞。这笔交易是行业融合的一个缩影：当长线运营（live-ops）的经济模型走向成熟、获客成本攀升，音乐与娱乐集团不再把游戏视为独立的赛道，而是把它当作 IP 的分发层——在"音乐领域注意力稀缺"与"游戏领域持续参与深度"之间进行套利（arbitrage）。对 GungHo 而言，借道索尼的全球营销机器，等同于为其旗舰作品锁定了一份"续约期权"。</div></div>
+    <div class="src">Source: Sony Music / Inven Global, 28 Aug</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">4.4</span> WEBTOON 控股 RI Games：漫画 IP 游戏化纵向整合<span class="en-t">WEBTOON Acquires 60% of RI Games</span></div>
+    <div class="p-en">WEBTOON Entertainment has finalised a 60% controlling stake in RI Games Holdings — a vehicle encompassing studios GrayGames and Offbeat — marking the first time the webtoon giant has assumed operational control of development pipelines, publisher relationships and release timing at scale. Two flagship adaptations anchor the four-year plan: the Overgeared MMORPG (GrayGames, published by Nexon) targets late-2026 launch, while the Omniscient Reader's Viewpoint adaptation (Offbeat, with Com2uS) is scheduled for 2028. The strategic logic is transparently vertical: rather than licensing story IP to third parties and forfeiting downstream value, WEBTOON internalises the conversion of its highest-engagement serials into persistent, monetisable game economies — converting serialised narrative loyalty into live-ops revenue loops. The model carries asymmetric risk: game development is capital-intensive and execution-sensitive, and MMORPG launches are notoriously binary. Yet the transaction signals a structural shift in Asian content economics — the dominant comics platform no longer treats games as an adjacent market but as the primary monetisation vehicle for its most valuable narrative assets.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n44')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n44">WEBTOON Entertainment 已完成对 RI Games Holdings 的 60% 控股——后者涵盖旗下 GrayGames 与 Offbeat 两家工作室——这是这家韩国漫画巨头首次在规模化层面上取得对开发管线、发行商关系与发售节奏的运营控制权。两个旗舰改编项目为这一四年计划奠基：GrayGames 开发、Nexon 发行的 Overgeared MMORPG 目标于 2026 年底上线；而 Offbeat 开发、Com2uS 参与的《全知读者视角》（Omniscient Reader's Viewpoint）改编则计划 2028 年推出。战略逻辑是彻底的纵向（vertical integration）：WEBTOON 不再将故事 IP 授权给第三方并放弃下游价值，而是将高粘性连载内容内化为可长期运营、可变现的游戏经济体——把连载叙事的忠诚度，转换为长线运营（live-ops）的收入回路。这一模式带有不对称风险：游戏开发资本密集、执行敏感，MMORPG 的上线结果历来都是"成王败寇"。但这笔交易仍标志着亚洲内容经济学的结构性转变——这家全球最具统治力的漫画平台不再把游戏视为相邻市场，而是把它当作其最有价值叙事资产的首要变现载体。</div></div>
+    <div class="src">Source: Overcentral / WEBTOON, Aug 2026</div>
+  </div>
+
+  <div class="news">
+    <div class="t"><span class="n">4.5</span> 平台收缩、UE6 与 DLSS 5 泄露<span class="en-t">Platform Retrenchment, UE6 and the DLSS 5 Leak</span></div>
+    <div class="p-en">A discernible retrenchment now characterises platform strategy: Xbox has scrubbed competitor branding from promotional trailers and Sony has reverted to "PlayStation 5 exclusive" labels on its upcoming tentpoles — a quiet reversal of the multiplatform messaging both ecosystems evangelised for years — while Nintendo's Switch 2, priced at $500 from September, leans on third-party ports with no first-party exclusives in August. Ubisoft's disclosures confirm new Assassin's Creed, Far Cry and Ghost Recon titles only for FY2027–28, deliberately designating the current year "quieter." Against this defensive posture, Epic detailed Unreal Engine 6's plan to fuse UE5 with the Unreal Editor for Fortnite — a genuinely multi-year bet unifying high-end rendering with creator-economy distribution — and Valve's Steam Frame VR headset appears near launch. Concurrently, Nvidia's unreleased DLSS 5 Neural Rendering runtime (~158 MB) leaked via an early-access NBA 2K27 build and has been experimentally injected by modders into Control, Skyrim, GTA V and Cyberpunk 2077, often rewriting faces while inflating VRAM usage — a live stress-test of the industry's contested move toward AI-rewritten art.</div>
+    <div class="cn-box"><button class="cn-toggle" onclick="toggleCn(this,'n45')" data-label="▼ 中文全文翻译">▼ 中文全文翻译</button>
+    <div class="p-cn" id="n45">一种可清晰辨别的"收缩"（retrenchment）姿态正成为当下平台战略的底色：Xbox 已从宣传预告片中删除竞品品牌标识，索尼则在即将推出的支柱作品（tentpoles）上重新贴回"PlayStation 5 独占"标签——这是对两大生态多年来所宣扬的"跨平台叙事"的悄然反转——而任天堂 Switch 2 自 9 月起售价提至 500 美元，整个 8 月却没有任何第一方独占，靠第三方移植撑场。育碧（Ubisoft）的财报披露亦确认，《刺客信条》《孤岛惊魂》《幽灵行动》系列新作最早要到 2027–28 财年才会推出，并刻意将今年定位为"更安静的一年"。在这套防御姿态的对照下，Epic 详细披露了 Unreal Engine 6 将 UE5 与《堡垒之夜》编辑器（Unreal Editor for Fortnite）相融合的计划——这是一项真正跨年度的赌注，旨在把高端渲染与创作者经济分发合二为一——Valve 的 Steam Frame VR 头戴设备也似乎临近发布。与此同时，英伟达（Nvidia）尚未公开的 DLSS 5 神经渲染（Neural Rendering）运行时（约 158 MB）经《NBA 2K27》抢先体验版泄露，已被模组作者实验性注入《控制》《上古卷轴 V：天际》《GTA V》《赛博朋克 2077》等游戏，常出现人脸被改写、显存占用飙升等副作用————这是一场对"AI 重绘美术"行业路线图的现场压力测试。</div></div>
+    <div class="src">Source: Kotaku / The Verge / VideoCardz / Best-Games.io</div>
+  </div>
+</section>
+
+<!-- ================= Section 5 词汇 ================= -->
+<section id="s5" class="c-lex">
+  <div class="sec-head"><span class="bar"></span><h2>📚 Academic Vocabulary</h2><span class="en">IELTS Academic Lexical Vault</span></div>
+  <table>
+    <thead><tr><th style="width:22%;">Word / Phrase</th><th style="width:36%;">Meaning (EN·CN)</th><th>Example from this Report</th></tr></thead>
+    <tbody>
+      <tr><td><b>Hawkish repricing</b></td><td>鹰派预期引发的重新定价</td><td><i>"…a hawkishly repriced Federal Reserve and a rekindled energy shock."</i></td></tr>
+      <tr><td><b>Equity risk premium</b></td><td>股权风险溢价（股票相对无风险债券的超额回报）</td><td><i>"…the equity risk premium has thinned to roughly 30 basis points."</i></td></tr>
+      <tr><td><b>Duration (compression)</b></td><td>久期（资产价格对利率的敏感度）</td><td><i>"…the longest-duration sectors bore the brunt of the compression."</i></td></tr>
+      <tr><td><b>Vertical integration</b></td><td>纵向一体化（掌握生产/分销的连续环节）</td><td><i>"Nvidia's strategy has pivoted toward acquiring the layers above its silicon."</i></td></tr>
+      <tr><td><b>Monetisation</b></td><td>商业化变现（将用户/注意力转化为收入）</td><td><i>"…chiefly monetises the free and 'Go' subscription tiers."</i></td></tr>
+      <tr><td><b>Retrenchment</b></td><td>收缩、节流（主动削减范围或野心）</td><td><i>"A discernible retrenchment now characterises platform strategy."</i></td></tr>
+      <tr><td><b>Decoupling</b></td><td>脱钩（原本关联的市场/经济体分离）</td><td><i>"…decoupling extends beyond advanced logic into equipment, packaging, robotics."</i></td></tr>
+      <tr><td><b>Bifurcated</b></td><td>二元分化的（分为两个截然不同的部分）</td><td><i>"…a bifurcated supply architecture: redundant toolchains…"</i></td></tr>
+      <tr><td><b>Scarcity premium</b></td><td>稀缺溢价（供给受限带来的额外成本）</td><td><i>"…$279 billion in supply commitments…quantifies the scarcity premium."</i></td></tr>
+      <tr><td><b>Inflection point</b></td><td>转折点、拐点（轨迹发生决定性变化的时刻）</td><td><i>"The transfer arrives at an inflection point for the $4.6-trillion conglomerate."</i></td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px; color:var(--sub); margin-top:8px;">💡 Select any English word/sentence for instant Chinese (built-in dict + online translation).</p>
+</section>
+
+<footer>
+  Compiled 2026-09-01 · 行情与K线：westock / 通达信 MCP（A股、港股 9/1 盘中 · 美股 8/31 收盘）· 估值分位：交易所 / 雪球 / 方正证券 / Wind ·
+  新闻来源：CNBC、Reuters、Xinhua、Bloomberg、WSJ、arXiv、The Verge、Kotaku、GamesIndustry.biz、Newzoo 及中文聚合（澎湃、新浪财经、华尔街见闻、每日经济新闻）·
+  大盘框架：用户知识库《想提前退休·指数基金篇》（宽基 + PE 分位定投法）。仅供学习交流，不构成投资建议。
+</footer>
+
+</div>
+<a class="totop" href="#" title="Back to top">↑</a>
+
+<!-- 词典气泡 -->
+<div id="dict-pop"><span class="arrow"></span><div class="w" id="dp-w"></div><div class="cn" id="dp-cn"></div><div class="def" id="dp-def"></div></div>
+
+<!-- 模态框 -->
+<div class="modal-mask" id="modal-mask">
+  <div class="modal">
+    <div class="m-head">
+      <span class="m-name" id="m-name">—</span>
+      <button class="m-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="m-chg" id="m-chg"></div>
+    <div class="m-stats" id="m-stats"></div>
+    <svg id="m-chart"></svg>
+    <div class="m-note" id="m-note"></div>
+  </div>
+</div>
+
+<script>
+/* ================= 指数数据（MCP 实时 K 线，最新在前→已转正序） ================= */
+const IDX = [
+  {g:"cn", key:"sh000001", name:"上证指数", en:"SSE Composite", code:"SH 000001", pe:"17.35", pct:"~78%", sig:"高估区 · 回避追高", sigc:"over", last:3987.10, chg:0.02,
+   note:"大市值综合指数，金融权重高。8/31 收涨 0.86% 后今日盘中持平，处于 72-78% 分位高估区，按定投框架等待回落。",
+   pts:[4041.24,3990.24,3970.88,4036.59,3996.16,3913.79,3967.13,3955.58,3882.41,3764.15,3796.28,3864.37,3867.03,3876.78,3814.20,3858.25,3813.31,3828.47,3804.69,3832.26,3809.66,3822.28,3878.43,3900.35,3940.04,3966.59,3934.09,3946.68,3926.96,3927.18,3982.65,3990.30,3894.42,3903.72,3905.20,3882.01,3889.44,3912.52,3956.57,3952.18,3986.30,3987.10]},
+  {g:"cn", key:"sz399001", name:"深证成指", en:"SZSE Component", code:"SZ 399001", pe:"42.85", pct:"~70%", sig:"偏高 · 谨慎", sigc:"over", last:13916.43, chg:-0.70,
+   note:"深市综合样本，科技成长权重高。今日受算力硬件回调拖累跌 0.70%，PE 42.85 处于约 70 分位。",
+   pts:[15416.80,15225.11,14939.73,15398.73,15046.67,14522.85,14924.87,14779.40,14488.65,13706.88,13610.23,14264.29,14061.44,14123.31,13774.68,14148.73,13509.68,13658.44,13285.80,13578.93,13448.29,13885.71,14144.20,14110.12,14311.01,14316.96,14259.44,14414.43,14289.44,14354.31,14704.27,14622.50,13890.15,13972.78,14094.17,13794.29,13745.87,13841.33,14048.88,13953.07,14015.00,13916.43]},
+  {g:"cn", key:"sh000300", name:"沪深300", en:"CSI 300", code:"SH 000300", pe:"13.83", pct:"72.5%", sig:"高估区 · 等回落", sigc:"over", last:4622.62, chg:-0.05,
+   note:"两市前 300 大市值，核心宽基。绝对 PE 仅 13.83 看似不贵，但十年分位回到 72.5%，按知识库定投法属等待区而非买点。",
+   pts:[4842.00,4792.26,4755.53,4876.31,4780.79,4695.38,4796.50,4786.78,4698.43,4529.10,4598.32,4739.23,4717.24,4728.00,4649.19,4702.43,4569.52,4600.26,4549.72,4588.20,4543.18,4600.93,4658.15,4651.31,4694.44,4702.02,4663.79,4690.92,4663.95,4665.88,4741.10,4725.81,4588.70,4592.75,4618.90,4563.13,4552.03,4590.79,4630.28,4609.18,4625.09,4622.62]},
+  {g:"cn", key:"sh000905", name:"中证500", en:"CSI 500", code:"SH 000905", pe:"33.83", pct:"~80%", sig:"高估区 · 等回落", sigc:"over", last:7879.71, chg:-0.91,
+   note:"中盘代表指数。今日跌 0.91%，PE 33.83、分位约 80%，小盘风格仍偏拥挤。",
+   pts:[8651.13,8508.79,8390.02,8652.79,8503.97,8138.14,8275.94,8147.58,7955.66,7513.76,7411.31,7800.61,7751.66,7734.31,7532.70,7720.60,7443.43,7524.51,7309.58,7493.99,7414.52,7607.49,7809.21,7829.36,7980.12,8030.95,7967.54,8045.31,7968.38,7990.33,8184.64,8177.18,7783.46,7850.40,7854.33,7717.09,7710.94,7770.53,7946.33,7895.45,7952.10,7879.71]},
+  {g:"cn", key:"sh000852", name:"中证1000", en:"CSI 1000", code:"SH 000852", pe:"44.25", pct:"~78%*", sig:"偏高 · 小盘拥挤", sigc:"over", last:7707.31, chg:-0.81,
+   note:"小盘代表指数（est. 分位）。波动最大，今日跌 0.81%；知识库建议新手远离高波动小盘。",
+   pts:[8472.60,8301.80,8117.86,8300.08,8198.31,7787.85,7925.12,7817.83,7631.76,7168.00,6965.38,7259.86,7158.76,7195.50,6995.69,7228.78,7026.28,7095.19,6900.66,7075.51,7079.78,7279.19,7493.05,7530.43,7679.53,7733.90,7698.05,7793.72,7715.89,7769.82,7968.38,7945.96,7517.77,7589.78,7601.80,7491.49,7527.50,7544.67,7732.95,7705.03,7770.42,7707.31]},
+  {g:"cn", key:"sz399006", name:"创业板指", en:"ChiNext", code:"SZ 399006", pe:"56.59", pct:"~46%", sig:"正常区 · 持有观望", sigc:"mid", last:3408.94, chg:-0.87,
+   note:"成长风格代表，本轮少数处于正常估值区（约 46 分位）的宽基。今日受算力硬件拖累跌 0.87%，可持有观望。",
+   pts:[3948.86,3911.91,3845.35,4018.17,3842.73,3723.52,3851.14,3804.70,3692.46,3428.63,3443.10,3685.97,3566.73,3575.52,3480.87,3590.79,3327.03,3378.70,3244.62,3343.96,3302.55,3488.97,3535.14,3515.56,3563.12,3537.21,3549.16,3602.08,3586.04,3626.30,3740.16,3705.56,3473.49,3495.59,3545.58,3431.89,3397.52,3414.88,3473.35,3424.40,3438.68,3408.94]},
+  {g:"cn", key:"sh000688", name:"科创50", en:"STAR 50", code:"SH 000688", pe:"143.84", pct:"~92%", sig:"极端高估 · 波动剧烈", sigc:"over", last:1655.48, chg:-1.72,
+   note:"科创板核心 50，PE 143.84、分位约 92%，单月波动可达 28%。今日跌 1.72%，按知识库提示不适合新手。",
+   pts:[1996.10,2001.59,2016.23,2185.83,2064.98,1994.32,2009.73,1924.27,1846.88,1715.40,1718.69,1903.16,1860.08,1789.69,1787.20,1807.95,1693.48,1678.74,1588.41,1635.96,1552.89,1616.36,1693.67,1701.29,1744.02,1737.77,1709.50,1736.99,1717.75,1717.68,1788.85,1790.87,1667.52,1652.97,1653.56,1602.34,1604.59,1632.02,1693.48,1662.15,1684.39,1655.48]},
+  {g:"cn", key:"H30269", name:"红利低波", en:"Dividend Low-Vol", code:"H30269", pe:"8.59", pct:"—", sig:"策略防御 · 分红+低波", sigc:"cheap", last:11021.06, chg:0.73,
+   note:"策略指数（8/31 收盘，无实时K线）。PE 8.59、股息率 4.24%，是当前 A 股宽基中唯一适合求稳吃分红的防御选择。",
+   pts:[]},
+  {g:"hk", key:"hkHSI", name:"恒生指数", en:"Hang Seng", code:"HSI", pe:"~12.0", pct:"~77%", sig:"分位偏高（绝对估值仍低）", sigc:"over", last:25326.08, chg:-0.94,
+   note:"港股大盘，成交连续七日低于 3000 亿港元，观望腾讯业绩。绝对 PE 约 12 倍不贵，但十年分位已到 77%。",
+   pts:[23616.32,23496.89,24199.46,24030.18,24175.12,24213.72,24340.73,24681.10,25008.60,24562.24,25143.05,25132.29,24892.66,25210.81,24963.23,25207.18,25310.85,25807.92,25858.88,25884.43,26009.40,25852.92,25915.82,25530.28,25668.03,25937.49,25652.82,25440.17,25396.51,25116.85,25453.23,25471.15,25495.07,25698.49,26009.46,25517.33,25511.10,25652.97,25565.74,25584.79,25566.99,25326.08]},
+  {g:"hk", key:"us.INX", name:"标普500", en:"S&P 500", code:"INX", pe:"25.6", pct:"~61%", sig:"正常区 · 普通定投", sigc:"mid", last:7686.14, chg:-0.33,
+   note:"美股核心宽基（8/31 收盘）。Fwd P/E ~20 倍、ERP 仅 ~0.3pp 历史极低分位；9 月加息预期压制，能源板块逆势 +2.10%。",
+   pts:[7483.23,7499.36,7440.43,7354.02,7357.49,7358.22,7365.46,7472.79,7500.58,7420.10,7511.35,7554.29,7431.46,7394.30,7266.99,7386.65,7405.73,7383.74,7584.31,7553.68,7609.78,7599.96,7580.06,7563.63,7520.36,7519.12,7473.47,7445.72,7489.72,7437.63,7316.15,7428.78,7413.18,7411.98,7408.30,7498.96,7509.20,7443.28,7457.69,7533.77,7572.40,7543.59,7515.34,7575.39,7543.64,7482.71,7503.85,7537.43,7483.24,7600.50,7736.52,7723.55,7709.96,7757.64,7753.11,7728.20,7748.50,7798.99,7785.76,7745.06,7691.76,7707.98,7641.16,7674.37,7652.86,7677.28,7675.70,7730.99,7711.76,7686.14]},
+  {g:"hk", key:"us.NDX", name:"纳斯达克100", en:"Nasdaq 100", code:"NDX", pe:"30.4", pct:"~48%", sig:"正常区 · 长期定投不择时", sigc:"mid", last:29456.97, chg:0.08,
+   note:"美股科技成长代表（8/31 收盘）。TTM PE 30.4、Fwd ~21.5 倍处十年中位，AI 资本开支韧性支撑；知识库建议长期定投不择时。",
+   pts:[29809.13,29329.21,29697.87,29173.02,29252.56,29727.10,29825.11,29264.10,29586.29,29502.60,29025.77,28592.66,28604.23,29155.18,28998.10,28454.81,28128.34,28039.21,27763.13,27192.31,28106.35,28274.20,28776.80,29733.16,29487.79,29373.33,29722.30,29621.80,29525.48,29742.60,30084.50,29995.38,29490.96,29426.02,29213.16,29308.86,29023.18,29209.23,29224.52,29641.56,29433.43,29456.97]},
+];
+
+/* ================= 渲染指数卡片 ================= */
+/* PE 分位 → 你的知识库行动建议（30/70 定投法），卡片上给中英双语决策 */
+function pctNum(p){ const m = String(p).match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : null; }
+function pctSignal(p){
+  const n = pctNum(p); if(n===null) return null;
+  if(n < 30) return {en:"BUY zone · start DCA", cn:"低估区 · 可分批定投", cls:"cheap"};
+  if(n < 70) return {en:"HOLD · wait", cn:"正常区 · 持有等待", cls:"mid"};
+  return {en:"TRIM / wait", cn:"高估区 · 不追高等回落", cls:"over"};
+}
+function cardHTML(d){
+  const cls = d.chg>0 ? "up" : (d.chg<0 ? "down" : "flat");
+  const sign = d.chg>0 ? "+" : "";
+  const sig = pctSignal(d.pct) || {en:d.sig, cn:'', cls:d.sigc};
+  let spark = "";
+  if(d.pts.length>1){ spark = sparkSVG(d.pts); }
+  return `<div class="idx-card" onclick="openModal('${d.key}')">
+    <span class="clickhint">📈 trend</span>
+    <div class="name">${d.name} <span class="en-name">${d.en}</span><span class="code">${d.code}</span></div>
+    <div class="row1"><span class="lvl">${d.last.toLocaleString('en-US',{maximumFractionDigits:2})}</span><span class="chg ${cls}">${sign}${d.chg.toFixed(2)}%</span></div>
+    <div class="vals"><span class="pv">PE ${d.pe}</span><span class="pv">10y pct ${d.pct}</span></div>
+    <span class="sig sig-${sig.cls}">${sig.en}</span>
+    ${sig.cn ? `<div class="pv" style="margin-top:4px;background:#f3f4f6;color:#374151;">${sig.cn}</div>` : ''}
+    ${spark}
+  </div>`;
+}
+function sparkSVG(pts){
+  const w=100,h=30,pad=2;
+  const min=Math.min(...pts), max=Math.max(...pts), rng=(max-min)||1;
+  const x=i=>pad + i*(w-2*pad)/(pts.length-1);
+  const y=v=>h-pad - (v-min)/rng*(h-2*pad);
+  const col = pts[pts.length-1]>=pts[0] ? "#e02424" : "#0e9f4f";
+  const d = pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="${col}" stroke-width="1.6"/></svg>`;
+}
+document.getElementById('grid-cn').innerHTML = IDX.filter(d=>d.g==='cn').map(cardHTML).join('');
+document.getElementById('grid-hk').innerHTML = IDX.filter(d=>d.g==='hk').map(cardHTML).join('');
+
+/* ================= 模态框：走势图 ================= */
+function openModal(key){
+  const d = IDX.find(x=>x.key===key); if(!d) return;
+  const cls = d.chg>0 ? "up" : (d.chg<0 ? "down" : "flat");
+  const sign = d.chg>0 ? "+" : "";
+  const sig = pctSignal(d.pct);
+  document.getElementById('m-name').innerHTML = `${d.en} <span style="font-size:12px;color:#6b7280;">${d.name} · ${d.code}</span>`;
+  document.getElementById('m-chg').innerHTML = `${d.last.toLocaleString('en-US',{maximumFractionDigits:2})}　<span class="${cls}" style="color:#fff;padding:1px 8px;border-radius:8px;font-size:13px;">${sign}${d.chg.toFixed(2)}%</span>`;
+  let stats = `<span class="m-pv">PE ${d.pe}</span><span class="m-pv">10y pct ${d.pct}</span>`;
+  if(sig){ stats += `<span class="m-pv" style="background:#eef2ff;color:#3730a3;">${sig.en} · ${sig.cn}</span>`; }
+  if(d.pts.length>10){
+    const p=d.pts, last=p[p.length-1];
+    const chg=(n)=> ((last/p[p.length-1-n]-1)*100).toFixed(2);
+    stats += `<span class="m-pv">5d ${chg(5)}%</span><span class="m-pv">20d ${chg(20)}%</span><span class="m-pv">40d ${chg(40)}%</span>`;
+  }
+  document.getElementById('m-stats').innerHTML = stats;
+  document.getElementById('m-note').textContent = '💬 ' + d.note;
+  drawChart(d);
+  document.getElementById('modal-mask').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-mask').classList.remove('show'); }
+document.getElementById('modal-mask').addEventListener('click', e=>{ if(e.target.id==='modal-mask') closeModal(); });
+function drawChart(d){
+  const svg = document.getElementById('m-chart');
+  const W=600,H=230,padL=50,padR=14,padT=16,padB=26;
+  const pts=d.pts;
+  let inner = '';
+  if(pts.length<2){ svg.innerHTML = `<text x="300" y="120" text-anchor="middle" font-size="14" fill="#9ca3af">暂无K线数据</text>`; return; }
+  const min=Math.min(...pts), max=Math.max(...pts), rng=(max-min)||1;
+  const x=i=>padL + i*(W-padL-padR)/(pts.length-1);
+  const y=v=>padT + (1-(v-min)/rng)*(H-padT-padB);
+  const col = pts[pts.length-1]>=pts[0] ? "#e02424" : "#0e9f4f";
+  // 网格 + Y轴刻度
+  for(let g=0; g<=4; g++){
+    const val = min + g*rng/4, gy = y(val);
+    inner += `<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="#eef2f7" stroke-width="1"/>`;
+    inner += `<text x="${padL-6}" y="${gy+4}" text-anchor="end" font-size="10.5" fill="#9ca3af">${val.toFixed(0)}</text>`;
+  }
+  // 面积 + 折线
+  const line = pts.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  inner += `<path d="${line} L${(W-padR).toFixed(1)},${y(pts[pts.length-1]).toFixed(1)} L${padL},${y(pts[pts.length-1]).toFixed(1)} Z" fill="${col}" opacity="0.08"/>`;
+  inner += `<path d="${line}" fill="none" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>`;
+  // 首尾日期
+  inner += `<text x="${padL}" y="${H-8}" font-size="10.5" fill="#9ca3af">${pts.length} 个交易日 · 近 ${(pts.length*1.4).toFixed(0)} 周</text>`;
+  inner += `<text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="10.5" fill="#9ca3af">最新 ${pts[pts.length-1].toFixed(2)}</text>`;
+  svg.innerHTML = inner;
+}
+
+/* ================= 选中英文 → 中文翻译气泡 ================= */
+const DICT = {
+  /* ==== 人物 ==== */
+  "kevin warsh":"凯文·沃什（美联储主席，2026年5月就任）",
+  "warsh":"沃什（美联储主席 Kevin Warsh）",
+  "jensen huang":"黄仁勋（英伟达 CEO）",
+  "huang":"黄仁勋（英伟达 CEO）/ 指数 / 比率（视语境）",
+  "john ternus":"约翰·特努斯（苹果新任 CEO，2026年9月1日上任）",
+  "ternus":"约翰·特努斯（苹果新任 CEO）",
+  "tim cook":"蒂姆·库克（苹果前 CEO，转任执行董事长）",
+  "cook":"蒂姆·库克（苹果）",
+  "richard ho":"Richard Ho（OpenAI 硬件负责人）",
+  "rob nelson":"Rob Nelson（Rockstar North 联合工作室负责人）",
+  "mira murati":"Mira Murati（前 OpenAI 高管，Thinking Machines Lab 联合创始人）",
+  "barret zoph":"Barret Zoph（Thinking Machines Lab 联合创始人，现 Google）",
+  "altman":"Sam Altman（OpenAI CEO）",
+  "musk":"埃隆·马斯克（特斯拉 / SpaceX CEO）",
+  "mark zuckerberg":"马克·扎克伯格（Meta CEO）",
+  "zuckerberg":"扎克伯格（Meta CEO）",
+  "sundar pichai":"桑达尔·皮查伊（Google CEO）",
+  "pichai":"皮查伊（Google CEO）",
+  "satya nadella":"萨提亚·纳德拉（Microsoft CEO）",
+  "nadella":"纳德拉（Microsoft CEO）",
+  "lisa su":"苏姿丰（AMD CEO）",
+  "giannandrea":"John Giannandrea（前苹果 AI 负责人，2026年4月离职）",
+  /* ==== 公司 ==== */
+  "anthropic":"Anthropic（AI 安全公司，Claude 母公司）",
+  "openai":"OpenAI（ChatGPT 母公司）",
+  "nvidia":"英伟达（GPU 与 AI 芯片龙头）",
+  "amd":"AMD（美国超威半导体）",
+  "apple":"苹果（消费电子巨头）",
+  "microsoft":"微软",
+  "google":"谷歌 / Google",
+  "meta":"Meta（Facebook 母公司）",
+  "tesla":"特斯拉",
+  "amazon":"亚马逊",
+  "aws":"亚马逊云服务（AWS）",
+  "samsung":"三星电子",
+  "tsmc":"台积电（全球晶圆代工龙头，73% 市占）",
+  "intel":"英特尔",
+  "sk hynix":"SK 海力士（HBM 内存龙头）",
+  "micron":"美光（美国内存厂商）",
+  "qualcomm":"高通",
+  "sifive":"SiFive（RISC-V 芯片设计公司）",
+  "bytedance":"字节跳动",
+  "moonton":"沐瞳科技（《Mobile Legends》开发商）",
+  "savvy":"Savvy Games Group（沙特游戏投资集团）",
+  "robux":"Roblox（沙盒游戏平台）",
+  "rockstar":"Rockstar Games（GTA 开发商）",
+  "take-two":"Take-Two Interactive（Rockstar 母公司）",
+  "electronic arts":"Electronic Arts / EA",
+  "ea":"EA / Electronic Arts",
+  "netflix":"Netflix",
+  "tencent":"腾讯",
+  "alibaba":"阿里巴巴",
+  "pif":"沙特公共投资基金（PIF）",
+  "silver lake":"银湖资本（私募）",
+  "affinity partners":"Affinity Partners（Jared Kushner 旗下基金）",
+  "sony music":"索尼音乐娱乐",
+  "gungho":"GungHo Online Entertainment（《智龙迷城》开发商）",
+  "webtoon":"WEBTOON（韩国漫画平台）",
+  "nexon":"Nexon（韩国游戏发行商）",
+  "com2us":"Com2uS（韩国游戏发行商）",
+  "epic":"Epic Games（《堡垒之夜》开发商）",
+  "valve":"Valve（Steam / Steam Frame VR）",
+  "nintendo":"任天堂",
+  "ubisoft":"育碧（Ubisoft）",
+  "softbank":"软银集团",
+  "treasury":"美国财政部 / 国债",
+  "fcc":"美国联邦通信委员会（FCC）",
+  "jftc":"日本公正取引委员会",
+  "pboc":"中国人民银行（PBOC）",
+  "opec":"OPEC 石油输出国组织",
+  "imf":"国际货币基金组织（IMF）",
+  "founder securities":"方正证券",
+  "yardeni":"Yardeni Research（Edward Yardeni）",
+  "newzoo":"Newzoo（游戏市场研究公司）",
+  "s3 partners":"S3 Partners（金融数据分析公司）",
+  "morgan stanley":"摩根士丹利",
+  "jpmorgan":"摩根大通 / JPMorgan",
+  "goldman sachs":"高盛",
+  "bank of america":"美国银行（BofA）",
+  "macquarie":"麦格理证券",
+  "clsa":"里昂证券",
+  "trendforce":"TrendForce 集邦咨询（市场情报）",
+  "counterpoint":"Counterpoint Research（市场研究）",
+  "deepmind":"Google DeepMind（AI 实验室）",
+  /* ==== 产品/模型 ==== */
+  "chatgpt":"ChatGPT（OpenAI 聊天机器人）",
+  "claude":"Claude（Anthropic AI 助手）",
+  "sonnet":"Claude Sonnet（Anthropic 中端模型）",
+  "opus":"Claude Opus（Anthropic 旗舰模型）",
+  "cowork":"Cowork（Anthropic 智能体环境）",
+  "gemini":"Gemini（Google AI 系列模型）",
+  "gpt-5":"GPT-5（OpenAI 旗舰模型）",
+  "gpt-4.1":"GPT-4.1（OpenAI 模型）",
+  "qwen":"Qwen / 通义千问（阿里大模型）",
+  "qwen3":"Qwen3（阿里第三代模型）",
+  "qwen2.5":"Qwen2.5（阿里）",
+  "qwen4":"Qwen4（阿里下一代模型）",
+  "qwen3.8":"Qwen3.8（阿里稀疏 MoE）",
+  "glm":"GLM（智谱 AI 大模型系列）",
+  "llama":"LLaMA（Meta 开源大模型）",
+  "deepseek":"DeepSeek（深度求索，国产大模型）",
+  "alfworld":"ALFWorld（智能体长程任务基准测试）",
+  "react":"ReAct（Reasoning + Acting 智能体范式）",
+  "dlss":"DLSS（英伟达深度学习超采样技术）",
+  "sora":"Sora（OpenAI 视频生成模型）",
+  "apple intelligence":"Apple Intelligence（苹果 AI 系统）",
+  "siri":"Siri（苹果语音助手）",
+  "blackwell":"Blackwell（英伟达 GPU 架构）",
+  "blackwell ultra":"Blackwell Ultra（英伟达 GPU 升级版）",
+  "vera":"Vera（英伟达 AI 智能体专用 CPU）",
+  "rubin":"Rubin（英伟达下一代 GPU）",
+  "trainium":"Trainium（亚马逊自研 AI 芯片）",
+  "tpu":"TPU（Google 张量处理单元）",
+  "jalapeno":"Jalapeño（OpenAI 自研推理芯片）",
+  "hbm":"HBM（高带宽内存）",
+  "dram":"DRAM（动态随机存取内存）",
+  "nand":"NAND（闪存）",
+  "risc-v":"RISC-V（开源指令集架构）",
+  "cowos":"CoWoS（台积电晶圆级封装）",
+  "soic":"SoIC（台积电 3D 封装）",
+  "nvlink":"NVLink（英伟达 GPU 互联）",
+  "openclaw":"OpenClaw（开源个人 AI 助手）",
+  /* ==== 金融/投资术语 ==== */
+  "hawkish":"鹰派的（倾向收紧货币政策的）",
+  "repricing":"重新定价",
+  "equity risk premium":"股权风险溢价：股票相对无风险债券的超额回报",
+  "risk premium":"风险溢价",
+  "duration":"久期：资产价格对利率变动的敏感度",
+  "compression":"压缩、收窄",
+  "forward earnings":"前瞻盈利（预期未来12个月盈利）",
+  "earnings yield":"盈利收益率（E/P）",
+  "percentile":"百分位：历史估值所处的位置",
+  "monetisation":"商业化变现",
+  "monetize":"变现",
+  "vertical integration":"纵向一体化",
+  "revenue run-rate":"年化收入（按当前节奏折算一年）",
+  "annualised":"年化的",
+  "weekly active users":"周活跃用户",
+  "advertisers":"广告主",
+  "segregated":"被隔离的、分开的",
+  "unit economics":"单位经济模型（单笔交易的盈亏结构）",
+  "inflection point":"转折点、拐点",
+  "conglomerate":"大型集团、综合企业",
+  "benchmark":"基准、基准测试",
+  "throughput":"吞吐量",
+  "latency":"延迟",
+  "binding constraint":"硬约束、瓶颈约束",
+  "frontier":"前沿（模型/技术）",
+  "provenance":"出处、来源",
+  "internalisation":"内部化（自研）",
+  "moat":"护城河（竞争优势）",
+  "persistent memory":"持久记忆",
+  "agentic":"智能体化的（可自主执行多步任务）",
+  "ephemeral":"短暂的、转瞬即逝的",
+  "permissioned":"受权限控制的",
+  "scaffolding":"脚手架（外部支撑架构）",
+  "harness":"框架、支撑系统（agent 运行时）",
+  "meta-actions":"元动作（对状态的操作指令）",
+  "baseline":"基线",
+  "decouple":"脱钩、解耦",
+  "licensing":"授权许可",
+  "structural":"结构性的",
+  "token":"令牌（模型处理文本的最小单元）",
+  "embedding":"嵌入（向量表示）",
+  "autoregressive":"自回归的",
+  "discrete":"离散的",
+  "continuous":"连续的",
+  "pass@k":"k 次采样中至少一次成功的概率（代码生成评估指标）",
+  "frugality":"节俭、节约",
+  "FLOPs":"浮点运算次数（算力单位）",
+  "retrenchment":"收缩、节流",
+  "discernible":"可察觉的、明显的",
+  "scrubbed":"被清除的",
+  "tentpoles":"支柱作品（重磅大作）",
+  "evangelised":"大力宣扬",
+  "dual-sourcing":"双源采购（分散供应商）",
+  "bifurcated":"二元分化的",
+  "compliance":"合规",
+  "scarcity premium":"稀缺溢价",
+  "procurement":"采购",
+  "tailwind":"顺风（有利因素）",
+  "headwind":"逆风（不利因素）",
+  "cyclicality":"周期性",
+  "oligopoly":"寡头垄断",
+  "repriced":"被重新定价",
+  "denominator":"分母",
+  "numerator":"分子",
+  "drawdown":"回撤（从高点下跌幅度）",
+  "accretion":"积累、增长",
+  "walled-garden":"围墙花园（封闭生态）",
+  "counterweight":"制衡力量",
+  "differentiating":"差异化的",
+  "moats":"护城河",
+  "credential":"凭证（密钥/令牌）",
+  "audit":"审计",
+  "consolidation":"整合、并购集中",
+  "leveraged":"杠杆化的",
+  "fungibility":"可互换性、可流通性",
+  "sovereign":"主权（的）",
+  "arbitrage":"套利",
+  "live-ops":"长线运营（持续更新的游戏运营模式）",
+  "MMORPG":"大型多人在线角色扮演游戏",
+  "serialised":"连载的",
+  "narrative":"叙事",
+  "barometer":"晴雨表、风向标",
+  "blockbuster":"重磅大作",
+  "SKU":"库存单位（商品规格）",
+  "pre-load":"预载（提前下载）",
+  "vacatedated":"腾出、撤离",
+  "vacated":"腾出、撤离",
+  "calendar":"档期、日程",
+  "price-supercycle":"价格超级周期",
+  "nanosheet":"纳米片（GAA 晶体管结构）",
+  "gate-all-around":"全环绕栅极（GAA）",
+  "foundry":"晶圆代工厂",
+  "wafer":"晶圆",
+  "gross margin":"毛利率",
+  "operating margin":"营业利润率",
+  "capex":"资本开支（CapEx）",
+  "node":"（制程）节点",
+  "yield":"良率（半导体）/ 收益率（债券）",
+  "monopoly":"垄断",
+  "de facto":"事实上的",
+  "entrenched":"根深蒂固的",
+  "convertible bond":"可转换债券",
+  "hyperscaler":"超大规模云服务商",
+  "antitrust":"反垄断",
+  "verticalisation":"纵向整合",
+  "supply chain":"供应链",
+  "tariff":"关税",
+  "lithography":"光刻（技术）",
+  "sanction":"制裁",
+  "export restrictions":"出口管制",
+  "mature nodes":"成熟制程",
+  "leading edge":"先进制程",
+  "utilization":"产能利用率",
+  "contagion":"传染（风险扩散）",
+  "liquidity":"流动性",
+  "hawk":"鹰派（主张紧缩）",
+  "dovish":"鸽派（主张宽松）",
+  "basis points":"基点（bp，1bp=0.01%）",
+  "treasury":"国债 / 美国财政部",
+  "equities":"股票（权益资产）",
+  "bonds":"债券",
+  "gold":"黄金",
+  "crude oil":"原油",
+  "geopolitical":"地缘政治的",
+  "sanctioned":"受制裁的",
+  "retaliation":"报复",
+  "premium":"溢价",
+  "inflation":"通胀",
+  "core PCE":"核心个人消费支出物价指数（美联储首选通胀指标）",
+  "CPI":"消费者物价指数",
+  "forward guidance":"前瞻指引（央行对未来政策路径的预告）",
+  "Federal Reserve":"美联储",
+  "Fed":"美联储",
+  "fomc":"联邦公开市场委员会（美联储议息会议）",
+  "rate hike":"加息",
+  "policy":"政策",
+  "fiscal":"财政的",
+  "monetary":"货币的",
+  "GDP":"国内生产总值",
+  "recession":"衰退",
+  "expansion":"扩张",
+  "AI":"人工智能",
+  "LLM":"大语言模型",
+  "VLM":"视觉语言模型",
+  "MoE":"混合专家模型（Mixture of Experts）",
+  "sparse":"稀疏的",
+  "multimodal":"多模态的（文本/图像/音视频）",
+  "inference":"推理（模型运行）",
+  "training":"训练",
+  "fine-tune":"微调",
+  "weights":"权重（模型参数）",
+  "open-weight":"开放权重",
+  "open-source":"开源",
+  "proprietary":"专有的、闭源的",
+  "benchmark leakage":"基准泄漏（测试数据泄露进训练集）",
+  "double-blind":"双盲",
+  "evaluation":"评估",
+  "agent":"智能体（可自主执行任务的 AI）",
+  "autonomous":"自主的",
+  "tool use":"工具调用",
+  "workflow":"工作流",
+  "subscriber":"订阅用户",
+  "enterprise":"企业（级）",
+  "API":"应用程序接口",
+  "IPO":"首次公开募股",
+  "valuation":"估值",
+  "revenue":"收入",
+  "profit":"利润",
+  "margin":"利润率",
+  "guidance":"业绩指引",
+  "beat":"超预期",
+  "miss":"不及预期",
+  "console":"游戏主机",
+  "exclusive":"独占（游戏）",
+  "publisher":"发行商",
+  "pre-orders":"预售",
+  "launch":"发布、上市",
+  "industry":"行业",
+  "market share":"市场份额",
+  "platform":"平台",
+  "ecosystem":"生态系统",
+  "congestion":"拥挤",
+  "bubble":"泡沫",
+  "correction":"回调",
+  "rebound":"反弹",
+  "rotation":"轮动（资金在不同板块间转移）",
+  "outperform":"跑赢（超越基准）",
+  "underperform":"跑输",
+  "relative strength":"相对强度",
+  "alpha":"超额收益",
+  "beta":"贝塔（市场敏感度）",
+  "volatility":"波动率",
+  "index":"指数",
+  "blue chip":"蓝筹股（大型绩优股）",
+  "large cap":"大盘股",
+  "small cap":"小盘股",
+  "growth":"成长（风格）",
+  "value":"价值（风格）",
+  "dividend":"股息",
+  "yield on dividend":"股息率",
+  "ETF":"交易所交易基金",
+  "index fund":"指数基金",
+  "dollar-cost averaging":"定投（定期定额投资）",
+  "allocation":"配置",
+  "asset class":"资产类别",
+  "portfolio":"投资组合",
+  "rebalance":"再平衡",
+  "diversification":"分散化",
+  "correlation":"相关性",
+  "bull market":"牛市",
+  "bear market":"熊市",
+  "breakout":"突破",
+  "support":"支撑位",
+  "resistance":"压力位",
+  "monetisation":"商业化变现",
+  /* ==== 报告里其他专有词 ==== */
+  "jackson hole":"杰克逊霍尔（美联储年度全球央行经济研讨会）",
+  "larak island":"拉腊克岛（伊朗，8/30遭美军空袭）",
+  "IRGC":"伊朗伊斯兰革命卫队",
+  "brent":"布伦特原油（北海基准油价）",
+  "WTI":"WTI 原油（西德州中级）",
+  "30-year":"30 年期（国债）",
+  "two-year":"2 年期（国债）",
+  "june":"6 月",
+  "july":"7 月",
+  "august":"8 月",
+  "september":"9 月",
+  "october":"10 月",
+  "november":"11 月",
+  "december":"12 月",
+  "q1":"第一季度",
+  "q2":"第二季度",
+  "q3":"第三季度",
+  "q4":"第四季度",
+  "fiscal":"财政的 / 财年的",
+  "YTD":"年内至今（Year-to-Date）",
+  "IPO":"首次公开募股",
+  "ECB":"欧洲央行",
+  "BOJ":"日本央行",
+  "PCE":"个人消费支出物价指数（美联储通胀指标）",
+  "DUV":"深紫外光刻（半导体工艺）",
+  "EUV":"极紫外光刻（先进工艺）",
+  "GAA":"全环绕栅极晶体管",
+  "MCU":"微控制器",
+  "SoC":"片上系统（System on Chip）",
+  "fab":"晶圆厂",
+  "TSMC":"台积电",
+  "ETF":"交易所交易基金",
+  "ARR":"年化经常性收入",
+  "LTV":"客户生命周期价值",
+  "CAC":"客户获取成本",
+  "AGI":"通用人工智能（Artificial General Intelligence）",
+  "RL":"强化学习（Reinforcement Learning）",
+  "SFT":"监督微调（Supervised Fine-Tuning）",
+  "GPU":"图形处理器",
+  "TPU":"张量处理单元",
+  "ASIC":"专用集成电路",
+  "FPGA":"现场可编程门阵列",
+  "CoWoS":"台积电晶圆级封装技术",
+  "SoIC":"台积电 3D 集成芯片堆叠",
+  "UCIe":"通用芯粒互联标准",
+  "IoT":"物联网",
+  "VR":"虚拟现实",
+  "AR":"增强现实",
+  "MR":"混合现实",
+  "XR":"扩展现实",
+  "SaaS":"软件即服务（Software-as-a-Service）",
+  "PaaS":"平台即服务",
+  "IaaS":"基础设施即服务",
+  "B2B":"企业对企业",
+  "B2C":"企业对消费者",
+  "CAGR":"年复合增长率",
+  "EPS":"每股收益",
+  "EBITDA":"息税折旧摊销前利润",
+  "FCF":"自由现金流",
+  "ROE":"净资产收益率",
+  "ROA":"总资产收益率",
+  "ROI":"投资回报率",
+  "ROIC":"投入资本回报率",
+  "OPM":"营业利润率",
+  "P/S":"市销率",
+  "P/B":"市净率",
+  "P/E":"市盈率",
+  "EPS":"每股收益",
+  "EV":"企业价值",
+  "IPO":"首次公开募股",
+  "SPO":"二次上市",
+  "buyback":"股票回购",
+  "dividend":"股息",
+  "spread":"利差、价差",
+  "yield curve":"收益率曲线",
+  "inverted":"倒挂的（收益率曲线）",
+  "term premium":"期限溢价",
+  "credit spread":"信用利差",
+  "credit risk":"信用风险",
+  "default":"违约",
+  "sovereign debt":"主权债务",
+  "balance sheet":"资产负债表",
+  "cash flow":"现金流",
+  "liquidity":"流动性",
+  "solvency":"偿付能力",
+  "leverage":"杠杆",
+  "EBIT":"息税前利润",
+  "EBITDA":"息税折旧摊销前利润",
+};
+function normWord(w){ return w.toLowerCase().replace(/[^a-z0-9\s\-\.']/g,'').replace(/s$|ed$|ing$|ly$|'s$/,'').replace(/\s+/g,' ').trim(); }
+const dp = document.getElementById('dict-pop');
+/* ---- 在线翻译兜底：内置词典未命中时调用 MyMemory 免费 API（浏览器直连，CORS 已开放） ---- */
+async function onlineTranslate(q){
+  try{
+    const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(q) + '&langpair=en|zh-CN';
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), 8000);
+    const res = await fetch(url, {signal: ctrl.signal});
+    clearTimeout(t);
+    if(!res.ok) return null;
+    const j = await res.json();
+    const txt = (j && j.responseData && j.responseData.translatedText) || '';
+    if(txt && txt.trim() && !/^[A-Za-z\s]+$/.test(txt.trim())) return txt.trim();
+    return null;
+  }catch(err){ return null; }
+}
+document.addEventListener('mouseup', function(e){
+  setTimeout(async ()=>{
+    if(e.target && (e.target.classList && e.target.classList.contains('cn-toggle'))) return; // 点展开按钮不触发
+    const sel = window.getSelection().toString().trim();
+    if(!sel){ dp.style.display='none'; return; }
+    const r = e.clientX, ry = e.clientY;
+    let left = r+14, top = ry+16;
+    if(left+360 > window.innerWidth) left = r-370;
+    if(top+150 > window.innerHeight) top = ry-160;
+    const dispW = document.getElementById('dp-w');
+    const dispCn = document.getElementById('dp-cn');
+    const dispDef = document.getElementById('dp-def');
+    dp.style.display='block';
+    dp.style.left = left+'px'; dp.style.top = top+'px';
+    dp.style.background = '#1e293b'; dp.style.borderColor = '#1e293b';
+    const wordCount = sel.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).length;
+    const lower = normWord(sel);
+
+    if(wordCount >= 3 || (wordCount === 2 && sel.length > 20)){
+      // ===== 句子选中 → 整句在线翻译（上下文意译，不逐词）=====
+      dispW.textContent = 'Sentence / 整句';
+      dispCn.textContent = '⏳ 翻译中…';
+      dispDef.textContent = 'MyMemory 在线翻译（上下文意译）';
+      const tl = await onlineTranslate(sel);
+      if(tl){ dispCn.textContent = tl + ''; }
+      else {
+        dispCn.textContent = '在线翻译失败（可能离线）。';
+        dispDef.textContent = '可点段落下方「▼ 中文全文翻译」查看完整中文版。';
+      }
+      return;
+    }
+
+    // ===== 单词/短语 → 内置词典优先，未命中在线翻译 =====
+    let hits = [];
+    if(DICT[lower]){ hits.push({w:lower, cn:DICT[lower]}); }
+    else {
+      const words = lower.split(/\s+/).filter(w=>w.length>1);
+      words.forEach(w=>{ if(DICT[w]) hits.push({w:w, cn:DICT[w]}); });
+    }
+    if(hits.length){
+      dispW.textContent = hits.slice(0,3).map(h=>h.w).join(' · ');
+      dispCn.textContent = hits.slice(0,3).map(h=>h.cn).join('；');
+      dispDef.textContent = '词典释义（结合语境）';
+    } else {
+      dispW.textContent = sel;
+      dispCn.textContent = '⏳ 在线翻译中…';
+      dispDef.textContent = '该词不在内置词库，调用 MyMemory 翻译';
+      const tl = await onlineTranslate(sel);
+      if(tl){ dispCn.textContent = tl + ''; }
+      else {
+        dispCn.textContent = '在线翻译失败（可能离线）。';
+        dispDef.textContent = '可点段落下方「▼ 中文全文翻译」查看完整中文版。';
+      }
+    }
+  },10);
+});
+document.addEventListener('mousedown', function(e){ if(!dp.contains(e.target) && e.target.id!=='dict-pop') dp.style.display='none'; });
+function toggleCn(btn,id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('show');
+  const showing = el.classList.contains('show');
+  btn.textContent = showing ? '▲ 收起' : (btn.dataset.label || '▼ 中文');
+}
+/* ================= 句子级 hover 联动：英文句悬停 → 对应中文句高亮 ================= */
+(function sentencePairing(){
+  const SPLIT_EN = /(?<=[.!?])\s+(?=[A-Z“"'])|\n+/g;   // 按句号/感叹/问号后空格切英文句（保留缩写容忍）
+  const SPLIT_CN = /(?<=[。！？；])\s*/g;              // 按中文句末标点切句
+  function splitEn(s){ return s.split(SPLIT_EN).map(x=>x.trim()).filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x)); }
+  function splitCn(s){ return s.split(SPLIT_CN).map(x=>x.trim()).filter(x=>x.length>1); }
+  document.querySelectorAll('.news, .macro-block').forEach(box=>{
+    const enEl = box.querySelector(':scope > .p-en, :scope .p-en');
+    const cnEl = box.querySelector(':scope .p-cn');
+    if(!enEl || !cnEl) return;
+    // 只对「同一卡片内」的 en/cn 配对（macro-block 里 cn 是单独 div）
+    const enS = splitEn(enEl.textContent);
+    const cnS = splitCn(cnEl.textContent);
+    if(enS.length < 2) return;
+    // 用 span 包裹，保留原 DOM 内可能的内联标签 → 用 innerHTML 重建会丢 term 高亮，
+    // 保守方案：仅当段落无 <span class=term> 时才包裹句子；否则跳过（保翻译功能优先）
+    if(enEl.querySelector('.term')) return;
+    enEl.innerHTML = enS.map((s,i)=>`<span class="en-s" data-i="${i}">${s}</span>`).join(' ');
+    if(cnEl && cnS.length>1){
+      cnEl.innerHTML = cnS.map((s,i)=>`<span class="cn-s" data-i="${i}">${s}</span>`).join('');
+      // hover 联动：英文句高亮 ↔ 中文句点亮
+      const cnSpans = cnEl.querySelectorAll('.cn-s');
+      enEl.querySelectorAll('.en-s').forEach(sp=>{
+        sp.addEventListener('mouseenter', function(){
+          const i = +this.dataset.i;
+          this.classList.add('hovered');
+          if(cnSpans[i]){ cnSpans[i].classList.add('lit','hover-zoom'); }
+        });
+        sp.addEventListener('mouseleave', function(){
+          const i = +this.dataset.i;
+          this.classList.remove('hovered');
+          if(cnSpans[i]){ cnSpans[i].classList.remove('lit','hover-zoom'); }
+        });
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
