@@ -1,8 +1,8 @@
-# 日报：信息源、踩坑清单与自动化提示词模板（v6）
+# 日报：信息源、踩坑清单与自动化提示词模板（v6.1）
 
-> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6 = 2026-09-02 用户定型版**。
+> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.1 = 2026-09-02 用户二轮反馈修复版（hover 全段落生效 + 单词语境化翻译）**。
 
-## ⚠️ v6 大改版说明（先读这段）
+## ⚠️ v6.1 大改版说明（先读这段）
 
 用户 2026-09-02 对 v5 提出以下全部意见，**v6 必须全部落实**：
 
@@ -18,9 +18,9 @@
    - **选中的是一整个句子（≥3 个英文词或长短语）→ 整句走在线翻译**（MyMemory，上下文意译），**不再逐词查内置词典**——之前"选中整句却只显示某个已收录单词的翻译"是 bug，已修。
    - 选中**单个单词/短词组** → 先查内置 DICT（423+ 条），未命中再走在线。
    - MyMemory 整句翻译质量已实测可用（如"数据中心 AI 芯片需求强劲带动公司净利润大幅增长"）。
-4. **hover 联动高亮（新功能）**：鼠标移到英文句子 → 下方对应中文句**浅亮 + 轻微平滑放大**（`.en-s:hover` ↔ `.cn-s.lit`，句子级 span 配对，加载时按句号/问号/感叹号切分）；不得与选中翻译冲突（hover 用 mouseenter/mouseleave，翻译用 mouseup，事件不互斥）。
+4. **hover 联动高亮（v6.1 修复，全段落生效）**：鼠标移到英文句子 → 下方对应中文句**浅亮 + 轻微平滑放大**（`.en-s:hover` ↔ `.cn-s.lit`，句子级 span 配对）。**必须按 v6.1 修复版实现**：term 段落用占位符保护后照常配对（v6 遇 `.term` 跳过导致新闻板块失效）；box 级 mouseover 事件委托；中文折叠时 hover 自动展开、离开收回；与选中翻译不冲突（hover=mouseover，翻译=mouseup）。
 5. **界面英文为主**：导航、区块标题、按钮、提示语用英文（如 `📊 Market Overview`、`🤖 AI Frontier`、`中文全文翻译` 按钮可保留中文因为它是中文翻译入口）；中文只出现在：中文全文翻译区、词汇表双语释义。
-6. AI 翻译：Google gtx 端点本机不通、Lingva 实例全部不可用 → **只用 MyMemory**，不要硬接别的。
+6. **单词语境化翻译（v6.1 新增）**：选中单词时**不能只给孤立词义**——先用 `getContextSentence` 取该词所在英文整句，展示「【word】词义（DICT/在线）」+「整句 MyMemory 意译」，让用户看该词在句中的真实含义；中文选区不弹气泡。
 
 ## 国外信息源（2026-09-01 实测可用性，自动化时优先直连）
 - **WebFetch 可直连（实测通过）**：
@@ -39,15 +39,16 @@
 - **红利低波指数代码是 `csH30269`**（中证红利低波），PE 8.59、股息率 4.24%；无实时K线 → 卡片降级处理。
 - **港股恒生指数 MCP 返回 `pe_ratio:0`**（无 PE），需用 WebSearch 补（雪球周报 ~12x/77% 分位）。
 - **`data_kline` 的 `last` 字段 = 最新价/收盘价**，首条即当日；区间涨跌幅 = `last / pts[n-1-k] - 1`。
-- **v6 选中翻译策略（2026-09-02 定型）**：
-  - mouseup 里先数选中英文词数：`wordCount >= 3`（或 2 词且长度>20）→ **整句在线翻译**，显示 `Sentence / 整句` 标签 + MyMemory 意译结果；单词级才查 DICT。
-  - DICT 423+ 条（公司/产品/人名/术语/高频词）；未命中单词再走 MyMemory。
-  - MyMemory：`fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(q)+'&langpair=en|zh-CN')`，CORS `*` 开放，8s 超时。
-  - Google gtx / Lingva 在本机不可用 → 只用 MyMemory。
-  - 离线兜底：提示看「中文全文翻译」。
-- **句子 hover 联动实现要点（2026-09-02 定型）**：
-  - 加载时把 `.p-en` 与配对 `.p-cn` 按句子切分（英文正则 `/(?<=[.!?])\s+(?=[A-Z])/`，中文按 `。！？；`），用 `<span class="en-s" data-i="n">` / `<span class="cn-s" data-i="n">` 包裹；
-  - 段落内含 `<span class="term">` 时跳过（保翻译功能优先，不重建 innerHTML）；
+- **v6.1 选中翻译策略（2026-09-02 用户二轮反馈定型）**：
+  - mouseup 里先数选中英文词数：`wordCount >= 3`（或 2 词且长度>20）→ **整句在线翻译**，MyMemory 意译；
+  - **单词级（1-2 词）→ 结合语境的翻译**：调用 `getContextSentence(anchorNode, sel)` 沿祖先链找 `.en-s/.cn-s/.p-en/.p-cn/.t`，取其 textContent，若无句子 span 则按选中词位置向前后找句界（`. ! ?` 后接空格）截取 180 字符窗口作"所在整句"；随后**并行**给「词义（DICT 命中优先，未命中 MyMemory 词译）」+「整句 MyMemory 意译」，气泡主区放整句译文、词义行标注【word】——让用户看该词在句中的真实含义，而不是孤立直译；
+  - 中文选区（无 A-Za-z）不弹气泡；
+  - MyMemory：`fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(q)+'&langpair=en|zh-CN')`，CORS `*` 开放，8s 超时；Google gtx / Lingva 本机不可用 → 只用 MyMemory；离线兜底提示看「中文全文翻译」。
+- **句子 hover 联动实现要点 v2（2026-09-02 修复版，全段落生效）**：
+  - ⚠️ **v6 的 bug**：旧实现 `if(enEl.querySelector('.term')) return;` 直接跳过含 term 段落 → 新闻板块（多段含 `<span class="term">`）hover 全部失效，只有大盘 macro-block 生效。**修复**：先把 `innerHTML` 中的 `<span class="term">…</span>` 替换成占位符 `\u0001T{n}\u0001`（存 tmap），切句包 `.en-s` span 后用 `\u0001T(\d+)\u0001` 正则还原 term 标签——term 段照常配对；
+  - hover 绑定改用 **box 级 mouseover/mouseout 事件委托**（`ev.target.closest('.en-s')`，防逐 span 绑定遗漏），中文点亮 `cnArr[i]` 用 if 判空防越界（中英句数不必相等）；
+  - **中文翻译默认折叠时 hover 自动展开**（记录 autoOpened，box mouseleave 时收回并恢复按钮文案 data-label）；
+  - 加载时按句子切分 `.p-en` 与配对 `.p-cn`：英文 `/(?<=[.!?])\s+(?=[A-Z"“'0-9(])|\n+/g`，中文按 `。！？；`；
   - CSS：`.en-s:hover{background:rgba(37,99,235,.10)}`，`.cn-s.lit{background:rgba(14,159,79,.16); font-size:1.04em}`（浅亮+平滑放大）。
 - **index 代码 vs K线**：westock `data_kline` 支持 `codes` 批量（最多实测 4 个一次成功）；美股用 `us.INX/us.NDX` 而非 `us.IXIC`。
 - 用户知识库：**Obsidian 优先**（`C:\Users\13662\Documents\Obsidian\40-个人生活\投资理财\`），关键词「PE 分位 定投 宽基」；ima 是备份（同批转写稿 8/31 上传）。《想提前退休》= PE 30/70 定投法+卖法；《存钱=亏钱》= M2 稀释+宽基=国运。
