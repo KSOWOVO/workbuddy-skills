@@ -1,0 +1,95 @@
+{
+  "_comment": "skill 路由权重配置。作用：多个同类 skill 都能沾边时，按「能力域专长」选出对的那个，并让轻量 skill 优先以省 token。改这个文件即可调路由，不用动脚本。",
+  "_how_it_works": "final = 关键词分 × 域专长乘子 × 自创加成 − 体积惩罚。域由 query 命中的触发词判定，可多域加权平均。",
+
+  "defaults": {
+    "domain_multiplier": 1.0,
+    "selfmade_boost": 1.15,
+    "cost_per_kb": 0.06,
+    "ad_hoc_threshold": 3.0,
+    "domain_hit_factor": 1.0,
+    "close_call_ratio": 0.18,
+    "meta_boost": 2.0,
+    "meta_damp": 0.45
+  },
+
+  "domains": {
+    "行情": {
+      "_note": "实时价格、涨跌、K线、资金流、板块、指数。market-query 最专且最轻，压倒性优先；news-search 不擅长，强抑制。",
+      "triggers": ["股价", "涨跌", "涨幅", "跌幅", "报价", "行情", "k线", "资金流", "主力", "板块", "成分股", "指数", "大盘", "收盘", "开盘", "换手", "市值", "涨了", "跌了", "多少元", "走势", "分时", "盘中"],
+      "weights": {
+        "market-query": 1.8,
+        "westock-data": 1.0,
+        "neodata-financial-search": 0.8,
+        "ifind-finance-data": 0.7,
+        "news-search": 0.2
+      }
+    },
+    "基本面": {
+      "_note": "财报、股东、分红、ETF持仓、龙虎榜、产业链、行业估值。westock-data 能力最全，neodata 次之。",
+      "triggers": ["财报", "财务报表", "营收", "净利润", "roe", "毛利率", "负债", "股东", "分红", "股息", "etf持仓", "龙虎榜", "产业链", "行业", "估值", "pe", "pb", "盈利预测", "业绩"],
+      "weights": {
+        "westock-data": 1.8,
+        "neodata-financial-search": 1.4,
+        "ifind-finance-data": 1.2,
+        "market-query": 0.3,
+        "news-search": 0.4
+      }
+    },
+    "资讯": {
+      "_note": "新闻、快讯、公告、公司动态。news-search 专精。",
+      "triggers": ["新闻", "快讯", "消息", "动态", "报道", "公告", "资讯", "最近怎么了", "有什么事", "最新", "传闻"],
+      "weights": {
+        "news-search": 1.8,
+        "neodata-financial-search": 1.0,
+        "westock-data": 0.9,
+        "market-query": 0.2
+      }
+    },
+    "问卷统计": {
+      "_note": "信效度、因子分析、SEM。用户最高频场景，pilot-survey-clean 独占。",
+      "triggers": ["信度", "alpha", "cronbach", "kmo", "efa", "因子分析", "sem", "结构方程", "cfa", "验证性因子", "效度", "量表", "likert", "题项", "问卷", "预调查", "citc", "区分度", "正大杯", "spss", "巴特利特"],
+      "weights": {
+        "pilot-survey-clean": 1.8
+      }
+    },
+    "知识库": {
+      "_note": "ima 写入/检索 vs 转写稿加工。ima 侧重上传读取，workbench 侧重加工成结构化资产。",
+      "triggers": ["ima", "知识库", "存进", "入库", "obsidian", "转写稿", "工作台", "思维导图", "精华", "导读", "整理视频", "加工"],
+      "weights": {
+        "ima-knowledge-upload": 1.7,
+        "learning-workbench-sync": 1.3
+      }
+    },
+    "浏览器": {
+      "_note": "需要真实浏览器或 OCR。静态页面取正文不该走这里（用 WebFetch）。",
+      "triggers": ["截图", "ocr", "网页", "浏览器", "验证码", "抓取", "点击", "登录", "扫描件", "canvas", "识别图", "表单"],
+      "weights": {
+        "browser-ocr": 1.8
+      }
+    },
+    "日报": {
+      "triggers": ["日报", "简报", "briefing", "智库", "晨报", "资讯汇总"],
+      "weights": {
+        "daily-intel-briefing": 1.8
+      }
+    },
+    "自然语言问答": {
+      "_note": "开放式金融提问、要观点/研报/舆情。neodata 专精，行情类 skill 不擅长开放式问答。",
+      "triggers": ["自然语言", "帮我分析", "怎么看", "值不值得", "该不该买", "值得买吗", "前景", "怎么样", "趋势判断", "研报", "舆情", "观点"],
+      "weights": {
+        "neodata-financial-search": 1.8,
+        "westock-data": 0.9,
+        "market-query": 0.7,
+        "ifind-finance-data": 0.8
+      }
+    },
+    "skill管理": {
+      "_note": "备份/同步/新建 skill 的元操作。",
+      "triggers": ["skill 备份", "skill备份", "同步到 github", "上 github", "开源 skill", "备份 skill", "github"],
+      "weights": {
+        "skill-github-backup": 1.8
+      }
+    }
+  }
+}
