@@ -1,11 +1,15 @@
 ---
 name: pilot-survey-clean
-summary: 预调查（pilot study）问卷数据清洗 + 信效度分析与自包含可视化仪表盘。适用于本地 docx 问卷 + xlsx 回收数据，输出清洗后数据集与交互式 HTML 报告。
-description: >
-  当用户给到一份问卷(docx)和若干份回收问卷(xlsx/csv)，并要做"预调查数据清洗/信度检验/题项分析/数据可视化"时使用。
-  典型任务：缺失值、直线作答、重复提交、逻辑矛盾检查；Cronbach's α 信度；CITC 修正项总相关 + 极端组 t 检验题项区分度；
-  用纯内联 SVG（零外部依赖）生成可离线打开的 HTML 仪表盘，并导出清洗后 CSV。
 agent_created: true
+summary: 问卷/量表数据清洗 + 信效度分析（α/KMO/EFA/CITC）+ 自包含离线 HTML 仪表盘。适用于本地 docx 问卷 + xlsx/csv 回收数据。
+description: >
+  问卷与量表数据的清洗和统计分析流水线。当用户提供问卷（docx）与回收数据（xlsx/csv），
+  或需要做信度、效度、因子分析、结构方程建模时使用。
+  触发词（中英文均触发）：信度、Cronbach α / alpha、KMO、Bartlett 球形检验、EFA、探索性因子、强制提取因子、
+  CITC、修正项总相关、题项分析、区分度、极端组 t 检验、效度、SEM、结构方程、CFA、验证性因子、
+  Likert 量表、预调查、pilot study、数据清洗、直线作答、缺失值、逻辑矛盾、重复提交、正大杯、SPSS。
+  产出：清洗后数据集 + 纯内联 SVG 的离线 HTML 仪表盘（零外部依赖）。
+  不适用于：非问卷类的通用数据处理（那种情况直接写 pandas 脚本，不建 skill）。
 ---
 
 # 预调查数据清洗与可视化流水线

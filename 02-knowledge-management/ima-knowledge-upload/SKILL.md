@@ -1,11 +1,13 @@
 ---
 name: ima-knowledge-upload
-summary: 通过 ima MCP 连接器把本地文件（md/txt/pdf/docx/pptx/xmind 等）写入 ima 知识库。链路为 create_media → COS 签名上传 → add_knowledge，含 COS 签名踩坑与 MIME 对照表。
-description: >
-  当需要把本地生成的文件（学习笔记、转写稿、思维导图、报告、任何 md/txt/pdf/docx）**写进 ima 知识库**时使用。
-  触发词：存进 ima / 上传到知识库 / 写入 ima / 同步到 ima / 把这份文档放进知识库 / ima 入库。
-  也适用于读取 ima：列出知识库、列出知识条目、按关键词搜索、抓取某条知识正文。
 agent_created: true
+summary: 通过 ima MCP 把本地文件（md/txt/pdf/docx/pptx/xmind）写入 ima 知识库，或读取/检索 ima 已有内容。链路 create_media → COS 签名上传 → add_knowledge。
+description: >
+  把本地生成的文件写进 ima 知识库，或读取 ima 已有内容时使用。
+  写入触发词：存进 ima、上传到知识库、写入 ima、同步到 ima、放进知识库、ima 入库、backup to ima。
+  读取触发词：列出知识库、列出知识条目、搜一下 ima、抓取某条知识正文、ima 里有没有。
+  适用文件：md / txt / pdf / docx / pptx / xmind 及任意文档。
+  含 COS 签名与 MIME 对照表；COS 上传必须禁用代理环境变量（脚本内已处理）。
 ---
 
 # ima 知识库读写

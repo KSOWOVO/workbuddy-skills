@@ -14,3 +14,6 @@
 # 本仓库只同步「用户自创 skill」（agent_created: true）。
 # 系统 / 市场预装 skill 默认不纳入，避免版权与体积问题。
 # 同步某个自创 skill 时，用 `git add <skill名>` 精准添加，不要 git add -A。
+
+# 本地重构备份（不入库）
+_backup_*/

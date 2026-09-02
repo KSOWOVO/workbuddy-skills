@@ -1,7 +1,12 @@
 ---
 name: browser-ocr
 agent_created: true
-description: 通过 agent-browser 控制真实 Chromium 浏览器（无头/有头），完成打开网页、点击、截图、提取 DOM 文本；必要时用 RapidOCR 对截图做本地中文/英文文字识别。适用于网页数据取证、表格截图识别、验证码、扫描件、canvas 渲染内容等场景。
+summary: 用 agent-browser 控制真实 Chromium（无头/有头）完成网页抓取、点击、截图、DOM 提取；必要时用 RapidOCR 做本地中英文识别。
+description: >
+  需要真实浏览器或图像文字识别时使用。
+  触发词：打开网页、登录网站、点按钮、填表单、下拉加载、截图、网页取证、抓表格、导出数据、
+  验证码、扫描件、图片转文字、OCR、识别截图里的字、canvas 渲染内容、动态渲染页面。
+  不适用于：静态页面取正文（用 WebFetch 更省），以及纯本地图片之外的常规文件读取。
 ---
 
 # browser-ocr 工作流

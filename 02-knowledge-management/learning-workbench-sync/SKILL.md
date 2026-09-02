@@ -1,11 +1,13 @@
 ---
 name: learning-workbench-sync
-summary: 把 ima 知识库里的视频转写稿（或任何长文档）加工成「学习工作台」的结构化学习资产：通顺全文（按时间戳分段）+ 导读（关键词/概要/章节速览）+ 思维导图 + 精华，写入 xx-content.js 并通过 data.js 的 fullRef 挂载。含数据契约、质检清单与全部踩坑点。
-description: >
-  当 Kelsen 说「加工/整理视频」「把转写稿做进工作台」「按标准整理文档」「同步资料」时使用。
-  目标产物：学习工作台（learning-workbench/）里每个条目一份 xx-content.js（window.XXX_FULL），data.js 里条目加 fullRef 引用。
-  流程：fetch_media_content 拉全文 → 清洗口语/时间戳/图片URL → 生成 segments/summary/keywords/chapters/mindmap/essence/highlights/formulas → 写文件 → 校验。
 agent_created: true
+summary: 把长文档/视频转写稿加工成「学习工作台」结构化学习资产：通顺全文（时间戳分段）+ 导读 + 思维导图 + 精华，写入 xx-content.js 并经 data.js 的 fullRef 挂载。
+description: >
+  把长文档或视频转写稿加工成结构化学习资产时使用。
+  触发词：加工/整理视频、转写稿做进工作台、按标准整理文档、同步资料、生成思维导图、做导读、提炼精华、整理成长文档。
+  流程：fetch_media_content 拉全文 → 清洗口语/时间戳/图片URL → 生成 segments/summary/keywords/chapters/mindmap/essence/highlights/formulas
+  → 写入 xx-content.js → data.js 加 fullRef → 校验。
+  产物落在 learning-workbench/ 目录。含数据契约、质检清单与全部踩坑点。
 ---
 
 # 学习工作台：视频转写稿 → 结构化学习资产
