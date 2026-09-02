@@ -49,15 +49,25 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 | 英文深度日报（宏观·AI·硬件·游戏） | `daily-intel-briefing` | 正文精简版，模板在 references/ |
 | 自创 skill 备份 GitHub | `skill-github-backup` | 详细流程在 references/ |
 
-### 金融类撞车时的优先级（这几个是预装 skill，能力重叠）
+### 同类 skill 撞车：交给权重仲裁，不要靠硬编码优先级
 
-1. **A股/港美股行情、板块、资金流、K线** → `market-query`（最轻，首选）
-2. **需要财报、股东、分红、ETF持仓、龙虎榜、产业链、宏观** → `westock-data`（能力最全，但正文大，先读其 references/routing-guide.md 定位命令）
-3. **自然语言问金融问题、要研报/舆情** → `neodata-financial-search`
-4. **只要新闻快讯/某公司的消息** → `news-search`
-5. **iFinD 特定数据（智能选股/宏观指标搜索）** → `ifind-finance-data`
+多个 skill 都能沾边时（如 5 个金融 skill），打分器用权重模型选出对的那个：
 
-行情类需求**不要**用 `westock-data` 当默认入口（重），也不要用 WebSearch 替代（数据不准）。
+    final = (关键词分 × 域专长乘子 + 域命中加分) × 自创加成 − 体积惩罚
+
+- **域专长乘子**：`weights.json` 定义每个 skill 在各能力域的擅长程度。
+  例如行情域 `market-query=1.8`、`news-search=0.2`，直接把不擅长的压下去。
+- **域命中加分**：query 每命中一个域触发词就给专长 skill 加分，保证"域判对了就能选对"。
+  纯乘子在关键词分低时救不回来，这一项解决了"营收/净利润"这类冷僻词误判为无匹配的问题。
+- **自创加成** ×1.15：更贴合用户习惯。
+- **体积惩罚**：每 KB 扣 0.06 分，抑制动辄 17KB 的重型 skill —— 这是省 token 的关键一环。
+
+**调路由只改 `weights.json`，不用动脚本。** 实测 4 类金融需求各自选对：
+行情→`market-query`、财报→`westock-data`、新闻→`news-search`、自然语言→`neodata-financial-search`。
+
+静态兜底（权重配置失效时）：行情→`market-query`；财报/股东/产业链→`westock-data`；
+新闻→`news-search`；自然语言/研报→`neodata-financial-search`；iFinD 专项→`ifind-finance-data`。
+行情类**不要**用 WebSearch 替代（数据不准）。
 
 ## 什么时候才建新 skill
 
