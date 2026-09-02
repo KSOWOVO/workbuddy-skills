@@ -126,3 +126,6 @@ git push -u origin main
   4. 验证：`GIT_TERMINAL_PROMPT=0 GCM_INTERACTIVE=never git fetch origin` 应直接到网络层；报网络 TLS 错（本机代理间歇断连）不是弹窗，是网络问题。
   ❌ **不要** `git config --global --unset credential.helper`——这会删掉用户级 manager 选择，反而让弹窗逻辑混乱。
 - **用户对「自动外发」敏感**：曾中途叫停同步。涉及 push/上传类操作，先确认再执行，别默默后台推；被 kill 的 push 可能只推了一半，恢复后务必用 API 验证云端文件列表。
+- **⚠️ 本机 Git Bash 怪癖：`env -u ...` 前缀会吞掉 python 的 stdout（2026-09-02 实测）**——`env -u http_proxy ... python script.py` 时，python 的 print 全部不可见（exit 仍 0），连重定向到文件都是空的。所以**「脚本 exit 0 + 无输出」不代表同步成功**；判断成败必须以云端 sha/commits 为准（见下一条），或不用 `env -u`（脚本内部 ProxyHandler({}) 已足够禁代理）。
+- **⚠️ api.github.com Contents API 的 GET 有边缘缓存（2026-09-02 实测）**：PUT 推完立即 `GET /contents/<path>` 可能仍返回**旧 sha**（几分钟内），会误判成推送失败。验证时加 cache-bust 参数：`GET /contents/<path>?nocache=$(date +%s)`，或直接 `GET /commits?per_page=3` 看最新 commit message。
+- **行尾差异导致 blob sha 与本地不同（正常现象）**：Windows 工作区文件是 CRLF，git 对象是 LF，API 上传的是工作区内容 → 云端 blob sha ≠ 本地 `git ls-files -s` 的 sha（如本地 c1262350…、云端 295625d…），但内容逐字一致。对齐验证以「内容 + commit」为准，不要死等 sha 字面相等；API 推送产生的云端 commit sha 也会与本地不同（fd75683 vs 287db24），属正常。
