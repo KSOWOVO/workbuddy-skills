@@ -17,3 +17,8 @@
 
 # 本地重构备份（不入库）
 _backup_*/
+
+# Python 编译缓存（勿入库）
+__pycache__/
+*.pyc
+*.pyo
