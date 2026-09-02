@@ -71,3 +71,40 @@ git push -u origin main
 - **⚠️ 本机 Git Bash 怪癖：`env -u ...` 前缀会吞掉 python 的 stdout（2026-09-02 实测）**——`env -u http_proxy ... python script.py` 时，python 的 print 全部不可见（exit 仍 0），连重定向到文件都是空的。所以**「脚本 exit 0 + 无输出」不代表同步成功**；判断成败必须以云端 sha/commits 为准（见下一条），或不用 `env -u`（脚本内部 ProxyHandler({}) 已足够禁代理）。
 - **⚠️ api.github.com Contents API 的 GET 有边缘缓存（2026-09-02 实测）**：PUT 推完立即 `GET /contents/<path>` 可能仍返回**旧 sha**（几分钟内），会误判成推送失败。验证时加 cache-bust 参数：`GET /contents/<path>?nocache=$(date +%s)`，或直接 `GET /commits?per_page=3` 看最新 commit message。
 - **行尾差异导致 blob sha 与本地不同（正常现象）**：Windows 工作区文件是 CRLF，git 对象是 LF，API 上传的是工作区内容 → 云端 blob sha ≠ 本地 `git ls-files -s` 的 sha（如本地 c1262350…、云端 295625d…），但内容逐字一致。对齐验证以「内容 + commit」为准，不要死等 sha 字面相等；API 推送产生的云端 commit sha 也会与本地不同（fd75683 vs 287db24），属正常。
+
+
+## ⚠️ 行尾污染：Contents API 上传会绕过 autocrlf（2026-09-02 踩坑）
+
+**现象**：经 Contents API 兜底推送后，云端 blob SHA 与本地 `git hash-object` 对不上。
+逐字看内容一模一样，但 `git status` 在网络恢复后会出现**删不掉的幽灵改动**。
+
+**根因**：本机仓库是 100% CRLF（`core.autocrlf=true`）。API 上传时直接发文件原始字节，
+**不会**经过 git 的 clean filter 做 CRLF→LF 规范化；而 git 语义下仓库里存的是 LF 版本。
+于是云端存了 CRLF blob，本地 git 期望 LF blob，两者 SHA 必然不同。
+
+**判断方法**：
+```bash
+git hash-object --no-filters <file>   # 原始字节 SHA（=云端 API 上传的）
+git hash-object <file>                # 应用 autocrlf 后 SHA（=git 期望的）
+# 两者不同 且 前者 == 云端 API 返回的 sha → 确诊行尾污染
+```
+
+**正确做法**：上传前取 git 规范化内容，不要直接读文件字节
+```bash
+git show HEAD:<path>        # 已是 LF 规范化版本，用它 base64 后 PUT
+```
+
+**一键校验/修复**（已封装）：
+```bash
+env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY   "C:/Users/13662/.workbuddy/binaries/python/versions/3.13.12/python.exe"   "C:/Users/13662/.workbuddy/skills/90-tooling/skill-github-backup/scripts/sync_verify.py" [--fix] [--realign -y] [--json]
+```
+- 默认：逐个比对 git blob SHA，输出「一致 / 行尾差异 / 内容漂移 / 缺失」四类报告
+- `--fix`：用 git 规范化内容重推行尾差异的文件
+- `--realign -y`：网络恢复后对齐 git 历史（**仅当 tree 一致才 reset --soft**，否则拒绝）
+- 安全策略：覆盖前比对忽略 CR 后的实质内容，**实质不同一律不覆盖**（防误伤其它会话改动）
+
+**历史分叉的处理**：API 直推产生的 commit 不在本地 git 历史里。
+对齐时只比较 tree（`git rev-parse HEAD^{tree}` vs `FETCH_HEAD^{tree}`），
+tree 一致才 `git reset --soft FETCH_HEAD`（只移动 HEAD，工作区不动，不丢改动）。
+注意 `git fetch origin main` 只更新 FETCH_HEAD，不会更新 `refs/remotes/origin/main`，
+需要再跑一次 `git fetch origin` 才会刷新 remote-tracking 分支。
