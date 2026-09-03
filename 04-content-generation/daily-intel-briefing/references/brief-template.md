@@ -102,4 +102,9 @@
 # 交付
 - `Global_Macro_Tech_Gaming_Intel_{YYYY-MM-DD}.html`（自包含、离线可用）。
 - 同名 `.md`。present_files 一次。
+
+# 邮件投递（2026-09-03 用户要求起，运行中的自动化 c90fc587 已含此段，模板与之一致）
+- present_files 之后，用 Agent Mail（mcp__agent-mail__SendMessage，发件 alias kema3534@agent.qq.com）把当日报告发到用户邮箱 **13662577329@163.com**（163，用户已预授权 → skip_confirmation=true，无需再问）。
+- 步骤：① agent_mail_upload_attachment 上传当日 .html 与 .md（本地绝对路径）→ 得 file_id；② SendMessage：to=[13662577329@163.com]，subject「【全球宏观·AI·科技·游戏日报】YYYY-MM-DD（HTML 全文 + MD 摘要见附件）」，body_format=MARKDOWN（正文=当日摘要：指数要点+各板块头条+词表），附件 file_id 放**顶层 file_refs**（⚠️ 误放 attachments 会报 `check input schema required error field_name: filename`）。
+- 失败不阻塞 present_files 与正文，回复写明原因；成功在回复开头注明「已发送至 13662577329@163.com」。
 ```
