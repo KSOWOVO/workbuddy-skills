@@ -44,6 +44,9 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 # 示例：
 #   ... sync_to_github.py 90-tooling/skill-github-backup "docs: 更新说明"
 ```
+> ⚠️ **Windows 受管 Bash 环境实证（2026-09-03）**：
+> ① `env -u ...` 会**吞掉整个命令的 stdout**（连 `python -c "print('x')"` 都零输出、exit 0）——脚本看起来"什么都没做"其实是正常路径被静音；本 shell 通常没有代理环境变量（`env | grep -i proxy` 为空），**直接去掉 `env -u` 前缀即可**；
+> ② 脚本参数**不要用 `~` 开头的 POSIX 路径**——Windows python 会把它解析成 `c:\c\Users\...` 报 No such file；用显式全路径 `"C:/Users/13662/.workbuddy/skills/90-tooling/skill-github-backup/scripts/sync_to_github.py"`。
 脚本自动完成：扫敏感 → 精准 add+commit → git push（502 自动重试 5 次）→ 全部失败走 api.github.com 兜底 → 最终验证云端 HEAD=本地 HEAD。**用户看不到任何 502/待办/遗留项。**
 
 ### 手动流程（脚本不可用时）
