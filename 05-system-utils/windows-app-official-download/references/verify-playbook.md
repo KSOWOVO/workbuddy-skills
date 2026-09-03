@@ -93,3 +93,54 @@ print('SHA256:', hashlib.sha256(b).hexdigest())
 
 版本 / 大小 / SHA256 / 签名状态 / 签名者 / 证书有效期 / 是否在线安装器（要不要联网）/
 安装步骤 / 明确说"我没有替你运行安装器"。
+
+---
+
+# APK 专项（当用户接受 Android 包时）
+
+## ⚠️ 头号误判：自签名证书 → `Verify()` 返回 False 是**正常**
+
+```powershell
+$cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+$cert.Import("<解出的 .RSA>")
+$cert.Subject; $cert.Issuer; $cert.NotBefore; $cert.NotAfter; $cert.Verify()
+```
+
+**Android 的 APK 签名证书一律是自签名的**（Issuer == Subject），不挂 CA 链。
+所以 `X509Certificate2.Verify()` **必然返回 False**。这不是风险信号，
+真正该看的是：
+
+| 看什么 | 期望 |
+|---|---|
+| `Subject` 的 CN/OU | 与厂商吻合（不背单词是 `CN=iscool, OU=iscool, L=BeiJing`） |
+| `Issuer == Subject` | 必然相等，正常 |
+| 有效期跨度 | Android 签名证书常 20-30 年（Google 要求覆盖到 2033 年后） |
+| 签名文件名 | 如 `META-INF/ISCOOLKE.RSA`，keystore 别名常含厂商名 |
+
+## 提取签名证书
+
+```python
+import zipfile
+z = zipfile.ZipFile(apk)
+rsa = [n for n in z.namelist() if n.upper().endswith((".RSA", ".DSA", ".EC"))]
+open("cert_" + rsa[0].split("/")[-1], "wb").write(z.read(rsa[0]))
+```
+
+## 从 APK 内解析真实版本（别只信文件名）
+
+`AndroidManifest.xml` 是二进制 AXML，字符串池是 **UTF-16-LE**：
+
+```python
+m = z.read("AndroidManifest.xml")
+txt = m.decode("utf-16-le", errors="ignore")
+import re
+print(set(re.findall(r"\d+\.\d+\.\d+", txt)))   # 版本名
+print([s for s in re.findall(r"[\x20-\x7e\u4e00-\u9fff]{3,}", txt)
+       if "langeasy" in s.lower()][:3])          # 包名核对
+```
+
+## 云厂商 ETag 可直接当 MD5 用
+
+金山云 **KS3**、以及多数 S3 兼容存储，对非分片上传的对象 **ETag 就是文件 MD5**。
+所以：下载后算 MD5，与响应头 `ETag` 一致 → 传输无损。
+比再找一个官方公布的校验值更快。
