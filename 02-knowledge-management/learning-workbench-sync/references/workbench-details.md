@@ -1,23 +1,49 @@
-# 学习工作台：设计系统、完成标准与自动同步后端
+# 学习工作台：设计系统、功能清单与自动同步后端
 
 > 从 SKILL.md 拆出的细节章节，仅在需要时读取。
+> 最后更新：2026-09-03（v3.8）
 
-## 设计系统（styles.css 已按 Apple HIG 重做，别回退）
-- 纯黑 #000 基底 + 分层表面；四级语义文字色（label-1~4）；强调色 Bright Blue #2997ff（深色背景规范）。
-- 动效：cubic-bezier(.25,.1,.25,1)（标准）、(.34,1.56,.64,1)（弹簧）；微交互 140ms、状态切换 220ms、转场 320ms。
-- 暗色下不用阴影，用 1px rgba(255,255,255,.08) 发丝边框分层。
-- 完整设计 token 见 styles.css 顶部注释。
+## 设计系统（当前为浅色主题，深色可切换）
+
+**主基调：浅蓝 `#4f8ef7` + 浅粉 `#f7a8c9` + 白/浅灰蓝 `#f5f7fb`**（Kelsen 指定，2026-09-01 从深色改为浅色）。
+
+- **双主题**：CSS 变量实现。浅色为默认（`:root`），深色用 `[data-theme="dark"]` 覆盖。
+- **Surface ladder**：canvas `#f5f7fb` → surface-1 `#fff` → surface-2 `#f4f7fc` → surface-3 `#e9eff9` → surface-4 `#dfe8f6`。
+- **边框三档**：`--border` `#e7ecf4` / `--border-2` `#d9e1ee` / `--border-3` `#c8d3e4`。
+- **文字四级**：`--text-1` `#1c2333` → `--text-4` `#b8c1d2`。
+- **粉的点缀用法**：收藏星标、金句卡片左边框+渐变底、精华圆点渐变（蓝→粉）、tab 指示器渐变、品牌点渐变、关键词 hover 渐变。
+- **动效**：`--ease` cubic-bezier(.25,.1,.25,1)、`--spring` (.34,1.56,.64,1)；全部走 transform/opacity（GPU），尊重 `prefers-reduced-motion`。
+- **装饰原则**：局部装饰不得孤立漂浮。分隔线用**全宽两端淡出渐变**（如 `linear-gradient(90deg, transparent, var(--border-2) 12%, var(--border-2) 88%, transparent)`），避免宽屏拉成硬线。
+
+## 功能清单（v3.8）
+
+| 功能 | 快捷键 | 说明 |
+|---|---|---|
+| 五面板 | `1`–`5` | 全文 / 导读 / 思维导图 / 精华 / 笔记 |
+| 资料切换 | `J` / `K` | 上/下一份 |
+| 返回列表 | `U` | 回欢迎页 |
+| 收藏 | `S` | localStorage，侧栏 ★ + 欢迎页收藏区 |
+| 深浅色 | `T` | localStorage 记忆 |
+| 导出 Markdown | `E` | 全文+精华+脑图大纲 |
+| 快捷键面板 | `?` | modal |
+| 搜索 | `/` | 实时计数、Esc 清空 |
+| 阅读进度 | — | 每份资料记面板+滚动位置，自动恢复 |
+| 回到顶部 | — | 滚动 >600px 浮现 |
+| 骨架加载 | — | 首屏 shimmer |
+| 自动同步 | 按钮 | 有后端走 /api/sync，无则降级 |
+
+## 自动同步后端（server/，2026-09-01 起）
+
+零依赖 Node.js，让「同步」在不开 WorkBuddy 时也全自动。
+
+- `server.js`：静态托管 + `GET /api/status` + `POST /api/sync`（0.0.0.0:8787，防并发锁、路径穿越防护）。
+- 管线 `lib/sync.js`：① `lib/obsidian.js` 扫 vault（sha1 增量、`sync_ima: never` 跳过、`ignorePatterns` 忽略日记/欢迎页）→ ② `lib/summarize.js` 调 DeepSeek 分块通顺改写 + 生成五面板 JSON → ③ `lib/ima.js` 回存 ima（可选，失败仅警告）→ ④ `lib/build.js` 写 data.js + obs-*.js（带 `contentFile`）→ ⑤ 存状态（成功才记，失败下轮重试）。
+- 前端：同步按钮优先 `fetch POST /api/sync`（12s 超时），失败降级为重载 data.js；`loadData` 后按 `contentFile` **动态注入**缺失 content 文件（后端生成的 obs-*.js 不在 index.html 静态列表里）。
+- 配置 `server/config.json`：DeepSeek key（必填，约 ¥0.1-0.2/份）、ima 凭证（可选）。
+- 部署细节见 `learning-workbench/server/README.md`。
 
 ## 完成标准
-- 全部条目五个面板可看：全文（带 ts 跳转）/ 导读 / 思维导图 / 精华 / 笔记（localStorage）。
-- 15 条内容约 15 万字通顺全文（理财 6.4 万 + 大作文 4.8 万 + 小作文 3.7 万），全部质检通过。
 
-## 自动同步后端（2026-09-01 新增，server/ 目录）
-Kelsen 在浏览器/平板打开工作台、不一定会开 WorkBuddy。`learning-workbench/server/` 是零依赖 Node.js 后端：
-
-- `server.js`：静态托管 + `GET /api/status` + `POST /api/sync`（0.0.0.0:8787，防并发锁，路径穿越防护）。
-- 同步管线（`lib/sync.js`）：① `lib/obsidian.js` 扫描 vault（sha1 增量、frontmatter `sync_ima: never` 跳过、`ignorePatterns` 忽略日记/欢迎页）→ ② `lib/summarize.js` 调 DeepSeek 分块通顺改写 + 一次调用生成五面板 JSON（提示词复刻手工加工标准）→ ③ `lib/ima.js` 回存 ima（可选，失败仅警告）→ ④ `lib/build.js` 写 data.js + obs-<id>-content.js（条目带 `contentFile` 字段）→ ⑤ 存状态（成功才记，失败下次重试）。
-- 前端 app.js 同步按钮：优先 `fetch POST /api/sync`（12s 超时），解析失败/无后端退回旧「只刷新 data.js」；`loadData` 后**动态注入缺失 content 文件**（用条目 `contentFile` 字段，因为后端生成的 obs-*.js 不在 index.html 里）。
-- 配置：`server/config.json`（DeepSeek key 必填；ima 可选）。首次同步把已有笔记预置为已同步（`server/.sync-state.json`），避免重复处理。
-- 踩坑补充：状态文件路径在 `server/` 而非 `server/lib/`；后端改代码/配置必须重启；file:// 下 fetch 失败是预期（前端自动降级）。
-- 详细部署说明见 `learning-workbench/server/README.md`。
+- 五面板全部可看，通顺全文不删减。
+- 15 份已加工资料：理财 4 + 大作文 5 + 小作文 6，约 14.9 万字。
+- 质检全过（语法 + 数据完整性 + 资源 200）。
