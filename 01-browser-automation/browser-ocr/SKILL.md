@@ -19,6 +19,27 @@ description: >
 - 从网页或图片中提取表格、文字、数据
 - 网页自动化：点击、填表、登录、滚动、导出 PDF
 - 验证网页内容或做网页数据取证
+- **当前模型不支持直接识图，但用户粘贴/引用了图片**（系统提示 "model does not support images / Content filtered"，或 Read 图片只返回"被过滤/不支持"）→ **必须 OCR 兜底，禁止回复"我看不了图片"，更禁止编造图片内容**
+
+## 模型不识图时的图片 OCR 兜底（2026-09-03 强制）
+
+任何会话收到用户图片（截图/扫描件/聊天图片），若当前模型读不了图（Read 图片失败/被过滤/返回不支持），**无条件走本地 OCR**，不要直接说"请换多模态模型"：
+
+1. **定位图片真实路径**（用户 @ 的图片会落盘）：
+   - WorkBuddy 剪贴板截图：`C:\Users\13662\.workbuddy\clipboard-images\`（按修改时间取最新，或按对话里 `<image_local_path>` 精确匹配）
+   - 微信收到的图片：`C:\Users\13662\Documents\xwechat_files\wxid_jkqytfnhr4g622_78c5\temp\` 下按时间找
+   - 用户直接给路径 → 直接用
+
+2. **OCR 识别**（Python 直跑，不需要真浏览器）：
+   ```bash
+   "C:/Users/13662/.workbuddy/binaries/python/versions/3.13.12/python.exe" \
+     "C:/Users/13662/.workbuddy/skills/01-browser-automation/browser-ocr/scripts/ocr.py" \
+     "<图片路径>" --min-score 0.3
+   ```
+   - 文字版输出即图片内容；需坐标用 `--json`
+   - OCR 把数字/汉字读错很常见（如 吴→伍、246→240），**关键数字（成绩/学号/分数）要结合上下文交叉验证，拿不准就明确告诉用户"这里是 OCR 结果，请对照原件"**，绝不把 OCR 误读当事实
+
+3. 识别完把文字内容当正常输入处理（分析/计算/填表照常），**并在回复里注明"已通过 OCR 识别你发的图片"** 让用户知道链路。
 
 ## 前置条件
 
