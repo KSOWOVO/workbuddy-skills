@@ -24,6 +24,7 @@
 | `04-content-generation/daily-intel-briefing` | 英文日报 **v6**（宏观·AI·硬件·游戏）IELTS 6.5/高中3500词，PE分位 BUY/HOLD/TRIM | 日报、简报、英文 briefing、智库日报 | 5.0K | 模板已拆 `references/` |
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
+| `05-system-utils/windows-app-official-download` | 取 Windows 软件官方正版包（含地区限制绕过）+ 签名/Defender 双校验 | 下载 Windows/电脑/PC 版、地区问题下不了、商店区域限制、官方无毒包、第三方站不放心、有没有原生 Win 版 | 4.6K | **只下载不代装、不改系统设置**；references/store-forensics.md（判读 `installer.type`）+ verify-playbook.md（Defender ExitCode 2 是权限失败非检出） |
 
 ## 预装 skill（只读，不改不同步）
 
@@ -42,6 +43,7 @@
 02-knowledge-management/ 知识库、笔记、内容加工
 03-data-analysis/        数据清洗、统计、问卷、可视化
 04-content-generation/   简报、写作、日报
+05-system-utils/         系统工具：软件下载取证、官方包校验、安装器安全核验
 10- ~ 80-/               预留新功能域（两位数前缀）
 90-tooling/              工具、基础设施、元技能（router/backup）
 ```
