@@ -971,92 +971,89 @@ async function onlineTranslate(q){
     return null;
   }catch(err){ return null; }
 }
-document.addEventListener('mouseup', function(e){
-  setTimeout(async ()=>{
-    if(e.target && (e.target.classList && e.target.classList.contains('cn-toggle'))) return; // 点展开按钮不触发
-    const sel = window.getSelection().toString().trim();
-    if(!sel){ dp.style.display='none'; return; }
-    const r = e.clientX, ry = e.clientY;
-    let left = r+14, top = ry+16;
-    if(left+360 > window.innerWidth) left = r-370;
-    if(top+150 > window.innerHeight) top = ry-160;
-    const dispW = document.getElementById('dp-w');
-    const dispCn = document.getElementById('dp-cn');
-    const dispDef = document.getElementById('dp-def');
-    dp.style.display='block';
-    dp.style.left = left+'px'; dp.style.top = top+'px';
-    dp.style.background = '#1e293b'; dp.style.borderColor = '#1e293b';
-    const wordCount = sel.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).length;
-    const lower = normWord(sel);
-
-    if(wordCount >= 3 || (wordCount === 2 && sel.length > 20)){
-      // ===== 句子选中 → 整句在线翻译（上下文意译，不逐词）=====
-      dispW.textContent = 'Sentence / 整句';
-      dispCn.textContent = '⏳ 翻译中…';
-      dispDef.textContent = 'MyMemory 在线翻译（上下文意译）';
-      const tl = await onlineTranslate(sel);
-      if(tl){ dispCn.textContent = tl + ''; }
-      else {
-        dispCn.textContent = '在线翻译失败（可能离线）。';
-        dispDef.textContent = '可点段落下方「▼ 中文全文翻译」查看完整中文版。';
-      }
-      return;
-    }
-
-    // 中文选区无需翻译 → 直接隐藏
-    if(!/[A-Za-z]/.test(sel)){ dp.style.display='none'; return; }
-
-    // ===== 单词/短语 → 结合语境的翻译：先取所在英文整句，再给词义 + 整句意译 =====
-    const escH = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    let hits = [];
-    if(DICT[lower]){ hits.push({w:lower, cn:DICT[lower]}); }
+/* ================= v6.2 翻译引擎：桌面 mouseup + 移动端 selectionchange 双通道 ================= */
+async function showSelTranslate(px, py, anchorNode){
+  const selText = (window.getSelection() ? window.getSelection().toString().trim() : '') ;
+  if(!selText){ dp.style.display='none'; return; }
+  const now = Date.now();
+  if(dp.dataset.key === selText && now - (dp.dataset.t|0) < 900) return; // 双通道去重
+  dp.dataset.key = selText; dp.dataset.t = now;
+  const vw = window.innerWidth||document.documentElement.clientWidth||320;
+  const vh = window.innerHeight||document.documentElement.clientHeight||480;
+  let left = px+14, top = py+16;
+  const bw = Math.min(340, Math.floor(vw*0.88));
+  left = Math.max(8, Math.min(left, vw - bw - 8));
+  top = Math.max(8, Math.min(top, vh - 170));
+  const dispW=document.getElementById('dp-w'), dispCn=document.getElementById('dp-cn'), dispDef=document.getElementById('dp-def');
+  dp.style.display='block'; dp.style.left=left+'px'; dp.style.top=top+'px';
+  dp.style.background='#1e293b'; dp.style.borderColor='#1e293b';
+  const sel = selText;
+  const lower = normWord(sel);
+  const wordCount = sel.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).length;
+  if(wordCount >= 3 || (wordCount === 2 && sel.length > 20)){
+    // ===== 句子选中 → 整句在线翻译（上下文意译，不逐词）=====
+    dispW.textContent = 'Sentence / sentence';
+    dispCn.textContent = '⏳ 翻译中…';
+    dispDef.textContent = 'MyMemory 在线翻译（上下文意译）';
+    const tl = await onlineTranslate(sel);
+    if(tl){ dispCn.textContent = tl + ''; }
     else {
-      const words = lower.split(/\s+/).filter(w=>w.length>1);
-      words.forEach(w=>{ if(DICT[w]) hits.push({w:w, cn:DICT[w]}); });
-    }
-    // 从选区锚点向上找所在英文句子（语境）
-    const ctx = getContextSentence(window.getSelection().anchorNode, sel);
-    const hasCtx = ctx && ctx.length>3;
-    if(hits.length){
-      const dictCn = hits.slice(0,3).map(h=>h.cn).join('；');
-      dispW.textContent = hits.slice(0,3).map(h=>h.w).join(' · ');
-      dispCn.textContent = dictCn;
-      if(hasCtx){
-        const rx = new RegExp('('+sel.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');
-        const hl = escH(ctx).replace(rx,'<b style="color:#7dd3fc">$1</b>');
-        dispDef.innerHTML = '<span style="color:#fde68a">在句中含义请看整句语境↓</span><br>— 原文整句 —<br><span style="color:#cbd5e1">'+hl+'</span><br><span style="color:#fbbf24">⏳ 整句意译…</span>';
-        const tl = await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx);
-        if(tl){
-          dispDef.innerHTML = '<span style="color:#fde68a">【'+hits[0].w+'】'+hits[0].cn+'</span>（词典义）<br>— 整句意译（看它在此句的意思）—<br><span style="color:#cbd5e1">'+escH(tl)+'</span>';
-          dispCn.textContent = tl;
-        } else {
-          dispDef.innerHTML = '— 原文整句 —<br><span style="color:#cbd5e1">'+hl+'</span><br><span style="color:#94a3b8">整句在线翻译失败（可能离线），以上为词典释义。</span>';
-        }
-      } else {
-        dispDef.textContent = '词典释义（未取到句子语境）';
-      }
-      return;
-    }
-    // DICT 未命中：在线翻译单词 + 整句，词义结合句意给出
-    dispW.textContent = sel;
-    dispCn.textContent = '⏳ 在线翻译中…';
-    dispDef.innerHTML = hasCtx
-      ? '— 原文整句 —<br><span style="color:#cbd5e1">'+escH(ctx.length>180?ctx.slice(0,180):ctx)+'</span>'
-      : '正在调用在线翻译…';
-    const wl = await onlineTranslate(sel);
-    const tl = hasCtx ? await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx) : null;
-    if(tl){
-      dispCn.textContent = '【'+sel+'】≈ ' + (wl || '（见下方整句译文中的表达）');
-      dispDef.innerHTML = '— 整句意译（结合上下文的含义）—<br><span style="color:#cbd5e1">'+escH(tl)+'</span>';
-    } else if(wl){
-      dispCn.textContent = wl;
-      dispDef.textContent = 'MyMemory 在线直译（未能翻译整句，建议选整句查看意译）';
-    } else {
       dispCn.textContent = '在线翻译失败（可能离线）。';
       dispDef.textContent = '可点段落下方「▼ 中文全文翻译」查看完整中文版。';
     }
-  },10);
-});
+    return;
+  }
+  // 中文选区无需翻译 → 隐藏
+  if(!/[A-Za-z]/.test(sel)){ dp.style.display='none'; return; }
+  // ===== 单词/短语 → 结合语境的翻译：先取所在英文整句，再给词义 + 整句意译 =====
+  const escH = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let hits = [];
+  if(DICT[lower]){ hits.push({w:lower, cn:DICT[lower]}); }
+  else {
+    const words = lower.split(/\s+/).filter(w=>w.length>1);
+    words.forEach(w=>{ if(DICT[w]) hits.push({w:w, cn:DICT[w]}); });
+  }
+  const ctx = getContextSentence(anchorNode, sel);
+  const hasCtx = ctx && ctx.length>3;
+  if(hits.length){
+    const dictCn = hits.slice(0,3).map(h=>h.cn).join('；');
+    dispW.textContent = hits.slice(0,3).map(h=>h.w).join(' · ');
+    dispCn.textContent = dictCn;
+    if(hasCtx){
+      const rx = new RegExp('('+sel.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');
+      const hl = escH(ctx).replace(rx,'<b style="color:#7dd3fc">$1</b>');
+      dispDef.innerHTML = '<span style="color:#fde68a">在句中含义请看整句语境↓</span><br>— 原文整句 —<br><span style="color:#cbd5e1">'+hl+'</span><br><span style="color:#fbbf24">⏳ 整句意译…</span>';
+      const tl = await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx);
+      if(tl){
+        dispDef.innerHTML = '<span style="color:#fde68a">【'+hits[0].w+'】'+hits[0].cn+'</span>（词典义）<br>— 整句意译（看它在此句的意思）—<br><span style="color:#cbd5e1">'+escH(tl)+'</span>';
+        dispCn.textContent = tl;
+      } else {
+        dispDef.innerHTML = '— 原文整句 —<br><span style="color:#cbd5e1">'+hl+'</span><br><span style="color:#94a3b8">整句在线翻译失败（可能离线），以上为词典释义。</span>';
+      }
+    } else {
+      dispDef.textContent = '词典释义（未取到句子语境）';
+    }
+    return;
+  }
+  // DICT 未命中：在线翻译单词 + 整句，词义结合句意给出
+  dispW.textContent = sel;
+  dispCn.textContent = '⏳ 在线翻译中…';
+  dispDef.innerHTML = hasCtx
+    ? '— 原文整句 —<br><span style="color:#cbd5e1">'+escH(ctx.length>180?ctx.slice(0,180):ctx)+'</span>'
+    : '正在调用在线翻译…';
+  const wl = await onlineTranslate(sel);
+  const tl = hasCtx ? await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx) : null;
+  if(tl){
+    dispCn.textContent = '【'+sel+'】≈ ' + (wl || '（见下方整句译文中的表达）');
+    dispDef.innerHTML = '— 整句意译（结合上下文的含义）—<br><span style="color:#cbd5e1">'+escH(tl)+'</span>';
+  } else if(wl){
+    dispCn.textContent = wl;
+    dispDef.textContent = 'MyMemory 在线直译（未能翻译整句，建议选整句查看意译）';
+  } else {
+    dispCn.textContent = '在线翻译失败（可能离线）。';
+    dispDef.textContent = '可点段落下方「▼ 中文全文翻译」查看完整中文版。';
+  }
+}
 /* 提取选区所在英文整句作为翻译语境 */
 function getContextSentence(node, selText){
   let el = node;
@@ -1067,7 +1064,6 @@ function getContextSentence(node, selText){
   if(el.classList.contains('en-s') || el.classList.contains('cn-s')) return txt.length>180 ? txt.slice(0,180) : txt;
   const idx = txt.toLowerCase().indexOf(selText.toLowerCase());
   if(idx < 0) return txt.length>180 ? txt.slice(0,180) : txt;
-  // 找句首：向前找最近的句末标点（. ! ? 后接空格）；句尾：向后找
   const headCandidates = [txt.lastIndexOf('. ', idx-120), txt.lastIndexOf('! ', idx-120), txt.lastIndexOf('? ', idx-120)];
   let s = 0; headCandidates.forEach(x=>{ if(x>-1 && x+2>s) s = x+2; });
   let e = -1;
@@ -1075,7 +1071,44 @@ function getContextSentence(node, selText){
   const end = e<0 ? Math.min(txt.length, idx+180) : e+1;
   return txt.slice(s, end).trim();
 }
-document.addEventListener('mousedown', function(e){ if(!dp.contains(e.target) && e.target.id!=='dict-pop') dp.style.display='none'; });
+document.addEventListener('mouseup', function(e){
+  setTimeout(()=>{
+    if(e.target && e.target.closest && (e.target.closest('.cn-toggle') || e.target.closest('#dict-pop'))) return;
+    const sel = window.getSelection().toString().trim();
+    if(!sel){ dp.style.display='none'; return; }
+    showSelTranslate(e.clientX, e.clientY, window.getSelection().anchorNode);
+  },10);
+});
+/* 移动端：长按选择文字 → selectionchange 触发翻译（range 定位） */
+(function(){
+  let mobile = false;
+  try{ mobile = !!(window.matchMedia && window.matchMedia('(pointer:coarse)').matches); }catch(err){}
+  if(!mobile && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'')) mobile = true;
+  if(!mobile) return;
+  let scT = null;
+  document.addEventListener('selectionchange', function(){
+    clearTimeout(scT);
+    scT = setTimeout(()=>{
+      const sel = window.getSelection();
+      const txt = sel ? sel.toString().trim() : '';
+      if(!txt){ dp.style.display='none'; return; }
+      if(!sel.rangeCount) return;
+      let rect = null;
+      try{ rect = sel.getRangeAt(0).getBoundingClientRect(); }catch(err){ rect = null; }
+      if(!rect || (rect.width < 1 && rect.height < 1)) return;
+      const vw = window.innerWidth||document.documentElement.clientWidth||320;
+      const vh = window.innerHeight||document.documentElement.clientHeight||480;
+      const px = Math.min(rect.left + rect.width/2, vw - 60);
+      const py = Math.min(rect.bottom + 10, vh - 40);
+      showSelTranslate(px, py, sel.anchorNode);
+    }, 300);
+  });
+  // 移动端点页面空白/滚动时收起气泡（点气泡本身不收起）
+  document.addEventListener('touchstart', function(e){
+    if(dp.style.display!=='none' && e.target && !dp.contains(e.target)) setTimeout(()=>{ dp.style.display='none'; }, 180);
+  }, {passive:true});
+})();
+document.addEventListener('mousedown', function(e){ if(dp.style.display!=='none' && !dp.contains(e.target)) dp.style.display='none'; });
 function toggleCn(btn,id){
   const el = document.getElementById(id);
   if(!el) return;
