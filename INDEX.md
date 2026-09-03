@@ -20,7 +20,7 @@
 | `03-data-analysis/pilot-survey-clean` | 问卷/量表数据清洗 + 信效度 + 可视化 | α 信度、KMO、EFA、CITC、SEM、预调查、清洗、直线作答、Likert、题项分析 | 3.9K | 正大杯/佛山IP论文同流程 |
 | `02-knowledge-management/ima-knowledge-upload` | 本地文件写进 ima 知识库 / 读 ima | 存进 ima、入库、同步到 ima、知识库搜索 | 4.5K | 含 `scripts/cos_upload.py`（禁代理） |
 | `02-knowledge-management/learning-workbench-sync` | 工作台「同步数据」操作手册 + 转写稿→结构化学习资产；**自更新契约**（随知识库/数据/功能演化） | 同步数据、更新工作台、拉新资料、加工视频、整理转写稿、做进工作台 | 4.7K | 三种模式决策 + references/sync-playbook.md（数据源快照）+ references/workbench-details.md（设计系统/后端） |
-| `01-browser-automation/browser-ocr` | 浏览器自动化 + 截图 OCR | 打开网页、点击、截图、验证码、表格图识别 | 4.2K | 含 `scripts/agent-browser.sh`、`ocr.py` |
+| `01-browser-automation/browser-ocr` | 浏览器自动化 + **双引擎 OCR（PaddleOCR 优先 + RapidOCR 兜底）**；模型不识图时的本地 OCR 兜底 | 打开网页、点击、截图、验证码、表格图识别、识别截图、OCR 兜底 | 4.9K | 含 `scripts/agent-browser.sh`、`ocr.py`；**paddle 必须 3.1.0**（3.3.x 有 oneDNN bug） |
 | `04-content-generation/daily-intel-briefing` | 英文日报 **v6**（宏观·AI·硬件·游戏）IELTS 6.5/高中3500词，PE分位 BUY/HOLD/TRIM | 日报、简报、英文 briefing、智库日报 | 5.0K | 模板已拆 `references/` |
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
