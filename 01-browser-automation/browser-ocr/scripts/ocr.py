@@ -7,17 +7,16 @@ from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageOps, ImageFilter
-from rapidocr_onnxruntime import RapidOCR
 
 
-def preprocess(img: Image.Image, scale: float = 3.0) -> Image.Image:
-    """放大 + 灰度 + 自动对比度 + 锐化，提升小字识别率。
+# ============ 多引擎 OCR（PaddleOCR 优先，RapidOCR 兜底）============
+# 引擎优先级：
+#   1. PaddleOCR（PP-OCRv6，识别率最高，~98%）
+#   2. RapidOCR（ONNX 轻量，~95%，paddle 装不上/崩溃时自动回退）
+# 首次运行任一引擎会自动下载模型，之后走本地缓存。
 
-    - 灰度：RapidOCR 内部本会处理，先转灰可去掉彩噪
-    - autocontrast：拉伸对比度，浅色 UI 截图上的灰字更清晰
-    - LANCZOS 放大 3x：小字号数字（成绩/学号）明显少漏
-    - SHARPEN：锐化边缘
-    """
+def _preprocess(img: Image.Image, scale: float = 3.0) -> Image.Image:
+    """放大 + 灰度 + 自动对比度 + 锐化，提升小字识别率。"""
     g = img.convert("L")
     g = ImageOps.autocontrast(g)
     g = g.resize((int(g.width * scale), int(g.height * scale)), Image.LANCZOS)
@@ -32,78 +31,141 @@ def _to_score(s) -> float:
         return 0.0
 
 
-def run(image: Path, scale: float = 3.0, min_score: float = 0.3) -> list[dict]:
+def _rows_from_boxes(items: list[dict], scale: float) -> list[dict]:
+    for d in items:
+        d["x0"] = round(d["x0"] / scale)
+        d["y0"] = round(d["y0"] / scale)
+        d["x1"] = round(d["x1"] / scale)
+        d["y1"] = round(d["y1"] / scale)
+    items.sort(key=lambda d: (d["y0"] // 18, d["x0"]))
+    return items
+
+
+def _engine_paddle():
+    from paddleocr import PaddleOCR
+    ocr = PaddleOCR(
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+        lang="ch",
+    )
+    def recv(pil: Image.Image):
+        tmp = Path(pil.filename) if hasattr(pil, "filename") else None
+        if tmp and tmp.is_file():
+            res = ocr.predict(str(tmp))
+        else:
+            res = ocr.predict(np.array(pil))
+        lines = []
+        for r in res:
+            texts = r.get("rec_texts") or r.get("texts") or []
+            for t in texts:
+                lines.append(t)
+        return lines
+    return recv
+
+
+def _engine_rapid():
+    from rapidocr_onnxruntime import RapidOCR
     engine = RapidOCR()
-    items = []
-
-    # 主识别：增强后大图
-    pil = Image.open(image).convert("RGB")
-    result, _ = engine(np.array(preprocess(pil, scale)))
-    seen = set()
-    for box, text, score in result or []:
-        sc = _to_score(score)
-        if sc < min_score or text in seen:
-            continue
-        seen.add(text)
-        xs = [p[0] / scale for p in box]
-        ys = [p[1] / scale for p in box]
-        items.append(
-            {
-                "text": text,
-                "confidence": round(sc, 4),
-                "x0": round(min(xs)),
-                "y0": round(min(ys)),
-                "x1": round(max(xs)),
-                "y1": round(max(ys)),
-            }
-        )
-
-    # 若主识别空/极少，回退原尺寸再试一次（防过度放大失真）
-    if len(items) <= 2:
-        result2, _ = engine(np.array(pil))
-        for box, text, score in result2 or []:
+    def recv(pil: Image.Image, scale: float = 1.0, min_score: float = 0.3):
+        result, _ = engine(np.array(pil))
+        items, seen = [], set()
+        for box, text, score in result or []:
             sc = _to_score(score)
             if sc < min_score or text in seen:
                 continue
             seen.add(text)
             xs = [p[0] for p in box]
             ys = [p[1] for p in box]
-            items.append(
-                {
-                    "text": text,
-                    "confidence": round(sc, 4),
-                    "x0": round(min(xs)),
-                    "y0": round(min(ys)),
-                    "x1": round(max(xs)),
-                    "y1": round(max(ys)),
-                }
-            )
+            items.append({
+                "text": text, "confidence": round(sc, 4),
+                "x0": round(min(xs)), "y0": round(min(ys)),
+                "x1": round(max(xs)), "y1": round(max(ys)),
+            })
+        return items
+    return recv
 
-    # 按从上到下、从左到右排序（文档阅读顺序）
-    items.sort(key=lambda d: (d["y0"] // 18, d["x0"]))
-    return items
+
+def run(image: Path, scale: float = 3.0, min_score: float = 0.3,
+        prefer: str = "auto", verbose: bool = False) -> tuple[list[dict], str]:
+    """识别图片，返回 (结果列表, 实际使用的引擎名)。
+
+    prefer: auto（Paddle→Rapid 兜底）| paddle | rapid
+    """
+    pil_orig = Image.open(image).convert("RGB")
+    used = ""
+    items = []
+
+    def try_engine(name):
+        nonlocal used, items
+        if used:
+            return
+        try:
+            if name == "paddle":
+                recv = _engine_paddle()
+                # PaddleOCR 自带检测，传原图即可；内部对清晰图效果最好
+                res = recv(pil_orig)
+                seen = set()
+                out = []
+                for text in res:
+                    if text in seen:
+                        continue
+                    seen.add(text)
+                    out.append({"text": text, "confidence": 1.0,
+                                "x0": 0, "y0": 0, "x1": 0, "y1": 0})
+                items = out
+            else:
+                recv = _engine_rapid()
+                big = _preprocess(pil_orig, scale)
+                items = recv(big, scale, min_score)
+                items = _rows_from_boxes(items, scale)
+            used = name
+        except Exception as e:
+            if verbose:
+                print(f"[ocr] 引擎 {name} 失败: {e}", file=sys.stderr)
+            items = []
+
+    if prefer in ("paddle", "rapid"):
+        try_engine(prefer)
+        if not used:
+            try_engine("rapid" if prefer == "paddle" else "paddle")
+    else:
+        try_engine("paddle")
+        if not used:
+            try_engine("rapid")
+
+    return items, used
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="RapidOCR 图片文字识别（自动预处理增强）")
-    parser.add_argument("image", help="图片路径，支持 png / jpg / webp")
-    parser.add_argument("--json", action="store_true", help="输出 JSON（含坐标与置信度）")
-    parser.add_argument("--min-score", type=float, default=0.3, help="置信度下限，默认 0.3")
-    parser.add_argument("--scale", type=float, default=3.0, help="放大倍率，默认 3.0（越大越吃内存）")
-    args = parser.parse_args()
+    ap = argparse.ArgumentParser(description="多引擎 OCR：PaddleOCR 优先，RapidOCR 兜底")
+    ap.add_argument("image", help="图片路径 png/jpg/webp")
+    ap.add_argument("--json", action="store_true", help="输出 JSON")
+    ap.add_argument("--min-score", type=float, default=0.3)
+    ap.add_argument("--scale", type=float, default=3.0, help="RapidOCR 放大倍率")
+    ap.add_argument("--engine", default="auto", choices=["auto", "paddle", "rapid"],
+                    help="引擎选择：auto 自动（默认）")
+    ap.add_argument("-v", "--verbose", action="store_true", help="打印引擎切换信息")
+    args = ap.parse_args()
 
     image = Path(args.image)
     if not image.is_file():
         print(f"找不到图片: {image}", file=sys.stderr)
         return 1
 
-    items = [i for i in run(image, args.scale, args.min_score) if i["confidence"] >= args.min_score]
+    items, used = run(image, args.scale, args.min_score, args.engine, args.verbose)
+    if not items:
+        print(f"[ocr] 所有引擎均未识别到文字", file=sys.stderr)
+        return 2
 
     if args.json:
-        print(json.dumps(items, ensure_ascii=False, indent=2))
+        payload = {"engine": used, "items": items}
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
-        for item in items:
-            print(item["text"])
+        if args.verbose:
+            print(f"[ocr] 引擎: {used}", file=sys.stderr)
+        for it in items:
+            print(it["text"])
     return 0
 
 

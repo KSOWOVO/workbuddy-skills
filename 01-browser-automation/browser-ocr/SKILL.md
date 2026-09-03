@@ -46,12 +46,14 @@ description: >
 执行前先检查是否已安装：
 - `agent-browser --version` 应能返回版本（当前验证可用的是 v0.27.0）
 - Chromium 已通过 `agent-browser install` 下载到 `~/.agent-browser/browsers/`
-- Python venv 中已装 `rapidocr-onnxruntime`
+- Python 中已装 OCR 引擎（至少一个）：
+  - **PaddleOCR（首选，~98%）**：`pip install paddlepaddle==3.1.0 paddleocr`（注意：**必须 3.1.0，3.3.x 有 oneDNN/PIR bug 会报 `ConvertPirAttribute2RuntimeAttribute not support`**，首次运行自动下载 PP-OCRv6 模型到 `~/.paddlex/official_models/`）
+  - **RapidOCR（兜底，~95%）**：`pip install rapidocr-onnxruntime`
 
 若未安装，按以下顺序安装：
 1. `npm install -g agent-browser`
 2. `agent-browser install`
-3. 在隔离 Python venv 中 `pip install rapidocr-onnxruntime`
+3. `pip install paddlepaddle==3.1.0 paddleocr rapidocr-onnxruntime`（用清华源 `-i https://pypi.tuna.tsinghua.edu.cn/simple` 加速）
 
 ## 核心脚本
 
