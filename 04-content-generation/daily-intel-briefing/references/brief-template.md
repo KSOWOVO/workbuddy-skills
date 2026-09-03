@@ -1,8 +1,12 @@
-# 日报：信息源、踩坑清单与自动化提示词模板（v6.1）
+# 日报：信息源、踩坑清单与自动化提示词模板（v6.2）
 
-> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.1 = 2026-09-02 用户二轮反馈修复版（hover 全段落生效 + 单词语境化翻译）**。
+> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.2 = 2026-09-03 用户反馈定型（修复 09-03 丢引擎 + 移动端翻译）**。
 
-## ⚠️ v6.1 大改版说明（先读这段）
+## ⚠️ v6.2 大改版说明（先读这段）
+
+- **09-03 教训**：当天自动化重写了翻译 JS，导致 v6.1 引擎（hover 联动/语境翻译/PE 徽章）全部丢失 → 移动端无翻译、桌面也退化。**铁律：HTML 引擎必须从 references/v6-sample-html.html 整体复制，只改 IDX 数据与 body 正文**。
+- **v6.2 新增（移动端）**：选中翻译双通道——桌面 `mouseup`；移动端（`(pointer:coarse)` 或 Android/iOS UA）`selectionchange` + range `getBoundingClientRect()` 定位 + `touchstart` 空白收起 + `dp.dataset.key/t` 900ms 去重防双弹；气泡 `max-width:min(340px,88vw)`。共用 `async function showSelTranslate(px,py,anchorNode)`。
+- 其余 v6.1 要求（IELTS 6.5 词汇/界面英文/hover term 占位符/30-70 徽章/Obsidian>ima）全部保留。
 
 用户 2026-09-02 对 v5 提出以下全部意见，**v6.1 必须全部落实**：
 
@@ -88,15 +92,17 @@
 ## Section 5 Vocabulary
 6-8 条高中-大学常用词/搭配（Word | 简单英文释义 + 中文 | 原文例句）。
 
-# 交互（JS 内嵌，照 v6.1 实现）
-- 选中翻译：单词语典秒查（DICT 400+）→ 未命中 MyMemory；**选中整句（≥3词）直接整句 MyMemory 意译**，不逐词。
-- hover 联动：英文句 hover → 对应中文句浅亮平滑放大（句子 span 配对）。
-- 指数卡点击弹走势图；涨红跌绿（A股），估值色：红 over/橙 mid/绿 cheap。
+# 交互（v6.2 铁律：引擎整体复制母版，禁止重写）
+- **方法**：把 `references/v6-sample-html.html` 整个文件复制为今日文件 → 只改 ①`const IDX=[...]` 数据 ② body 正文/日期 ③ 词汇表。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS 一字不改**（母版已含全部：DICT 423+ / normWord / onlineTranslate / showSelTranslate / mouseup / selectionchange(移动端) / getContextSentence / sentencePairing(term占位) / pctSignal / openModal / toggleCn）。
+- 双通道翻译：桌面 mouseup + 移动端 selectionchange（pointer:coarse 或 Android/iOS UA，range 定位，touchstart 收起）；整句≥3词整句意译；单词语境化（词义+整句意译）。
+- 涨红跌绿（A股）；估值色：红 over/橙 mid/绿 cheap。
+- **产出后自检（缺一项不许交付）**：grep 必须全部命中 `showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s`；`node -e` 语法检查通过；IDX 指数 ≥9 条含 pct 字段。
 
 # 工作流
 1. 并行：读 Obsidian 知识库 + westock data_kline + 6 组 WebSearch。
 2. K 线算近 5/20/40 日涨跌（last/pts[n-1-k]-1）。
-3. 生成 HTML（v6.1 语言+交互）；同名 md（英文+中文摘要）。
+3. 复制 v6-sample-html.html 为今日文件 → 替换 IDX 数据与正文 → 保存。
+4. **自检**（见上"产出后自检"）→ 通过后生成同名 md（英文+中文摘要）→ present_files（html 首位）。
 4. present_files 一次（html 首位）。
 
 # 交付
