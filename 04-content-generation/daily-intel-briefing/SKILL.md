@@ -38,7 +38,7 @@ description: >
 - 全篇无问候、无签名。
 
 ## 数据源优先级
-1. **westock-mcp `data_kline`** 拉指数日K线：sh000001/sh000300/sh000905/sh000852/sh000688/sz399001/sz399006/hkHSI/us.INX/us.NDX，limit:60-130；红利低波 `csH30269` 无K线→降级纯数据。
+1. **westock-mcp `data_kline`** 拉指数日K线：sh000001/sh000300/sh000905/sh000852/sh000688/sz399001/sz399006/hkHSI/us.INX/us.NDX，limit:60-130；红利低波 `csH30269` 有日K线（无盘中bar）→ 用上交易日收盘出卡 + 脚注。
 2. **知识库（Obsidian 优先）**：`C:\Users\13662\Documents\Obsidian\40-个人生活\投资理财\想提前退休…md`（PE 30/70 定投+卖法）、《存钱=亏钱…md》（M2 稀释/宽基=国运）；ima-mcp 兜底 `search_knowledge`。
 3. **WebSearch（Tier-1）**：宏观/美联储/地缘/公司新闻/估值分位。
 4. 估值分位冲突时优先交易所口径，脚注注明来源日期。
