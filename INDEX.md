@@ -25,6 +25,7 @@
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
 | `05-system-utils/windows-app-official-download` | 取 Windows 软件官方正版包（含地区限制绕过）+ 签名/Defender 双校验 | 下载 Windows/电脑/PC 版、地区问题下不了、商店区域限制、官方无毒包、第三方站不放心、有没有原生 Win 版 | 4.6K | **只下载不代装、不改系统设置**；references/store-forensics.md（判读 `installer.type`）+ verify-playbook.md（Defender ExitCode 2 是权限失败非检出） |
+| `90-tooling/skland-endfield-toolkit` | 终末地 MaaEnd 每日自动化 + 森空岛官方 API（签到/账号面板/协议空间精调） | MaaEnd、终末地自动化、每日任务、森空岛签到、协议空间、账号面板、skland token、preaction | 2.7K | 生产已部署于 `~\.workbuddy\skland_tools\`（含 README 与修复入口）；references/skland-api.md（端点链+签名算法+数据结构） |
 
 ## 预装 skill（只读，不改不同步）
 
