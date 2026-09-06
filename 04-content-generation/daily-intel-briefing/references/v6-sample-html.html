@@ -1116,22 +1116,35 @@ function toggleCn(btn,id){
   const showing = el.classList.contains('show');
   btn.textContent = showing ? '▲ 收起' : (btn.dataset.label || '▼ 中文');
 }
-/* ================= 句子级 hover 联动 v2：英文句悬停 → 中文句点亮 =================
-   关键修复：
-   ① 段落内 <span class="term"> 用占位符保护（切句后还原），term 段落不再被跳过 —— 新闻板块全部生效；
-   ② hover 改用 box 级 mouseover/mouseout 事件委托（不依赖逐 span 绑定）；
-   ③ 中文翻译默认折叠时，hover 英文句自动展开中文（离开时收回），保证点亮可见。 */
+/* ================= 句子级 hover 联动 v3：比例映射 + 数字锚点对齐 =================
+   修复 v2 的 i↔i 硬配对：英文句数 ≠ 中文句数时（翻译合并/拆句、缩写误切）高亮错位。
+   v3：① 英文切句后合并缩写碎片（U.S. / Inc. / Aug. 等不再切断）；
+       ② 英文句 i → 中文区间 [lo,hi]（比例映射，端点对齐，支持多对一/一对多）；
+       ③ 中文句 ≥ 英文句时，用数字指纹（2.71 / 90.49 等）在 ±1 窗口内修正区间中心；
+       ④ 区间全局预计算 + 单调不减约束；⑤ term 占位符保护 / mouseover 委托 / 自动展开中文（沿袭 v2）。 */
 (function sentencePairing(){
-  const SPLIT_EN = /(?<=[.!?])\s+(?=[A-Z"“'0-9(])|\n+/g;   // 按句末标点切英文句
-  const SPLIT_CN = /(?<=[。！？；])\s*/g;                    // 按中文句末标点切句
+  const SPLIT_EN = /(?<=[.!?])\s+(?=[A-Z“"'0-9(])|\n+/g;
+  const SPLIT_CN = /(?<=[。！？；])\s*/g;
   const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  function splitEn(s){ return s.split(SPLIT_EN).map(x=>x.trim()).filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x)); }
+  const ABBR = /(^|\s)([A-Za-z]{1,4}|etc|vs|inc|ltd|corp|mr|mrs|ms|dr|prof|st|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|approx|est|fig|no|vol|pp)\.$/i;
+  function splitEn(s){
+    const parts = s.split(SPLIT_EN).map(x=>x.trim()).filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x));
+    const out = [];
+    for(let i=0;i<parts.length;i++){
+      let cur = parts[i];
+      while(i+1<parts.length && ABBR.test(cur) && /^[a-z(]/.test(parts[i+1])){
+        cur = cur + ' ' + parts[i+1]; i++;
+      }
+      out.push(cur);
+    }
+    return out.filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x));
+  }
   function splitCn(s){ return s.split(SPLIT_CN).map(x=>x.trim()).filter(x=>x.length>1); }
+  function nums(t){ return new Set(String(t).match(/\d+(?:\.\d+)?/g)||[]); }
   document.querySelectorAll('.news, .macro-block').forEach(box=>{
     const enEl = box.querySelector(':scope > .p-en, :scope .p-en');
     const cnEl = box.querySelector(':scope .p-cn');
     if(!enEl || !cnEl || enEl.dataset.paired) return;
-    // ① term 保护：把 <span class="term">…</span> 换成占位符 → 切句 → 包 span → 还原
     const tmap = [];
     const enHtml = enEl.innerHTML.replace(/<span class="term">([\s\S]*?)<\/span>/g,(m,t)=>{ tmap.push(t); return '\u0001T'+(tmap.length-1)+'\u0001'; });
     const enPieces = splitEn(enHtml);
@@ -1139,30 +1152,63 @@ function toggleCn(btn,id){
     enEl.innerHTML = enPieces.map((s,i)=>'<span class="en-s" data-i="'+i+'">'+esc(s)+'</span>').join(' ');
     if(tmap.length) enEl.innerHTML = enEl.innerHTML.replace(/\u0001T(\d+)\u0001/g,(m,i)=>'<span class="term">'+tmap[+i]+'</span>');
     enEl.dataset.paired = '1';
-    // ② 中文段落包句子 span（仅当还没包过）
     if(cnEl && !cnEl.querySelector('.cn-s')){
       const cnS = splitCn(cnEl.textContent);
       if(cnS.length > 1) cnEl.innerHTML = cnS.map((s,i)=>'<span class="cn-s" data-i="'+i+'">'+esc(s)+'</span>').join('');
     }
     const cnArr = cnEl ? Array.prototype.slice.call(cnEl.querySelectorAll('.cn-s')) : [];
-    // ③ hover 联动（事件委托，任意 en-s 都能触发）
+    const N = enPieces.length, M = cnArr.length;
+    const ranges = [];
+    (function precompute(){
+      let prevLo = 0;
+      for(let i=0;i<N;i++){
+        let lo = Math.min(M-1, Math.floor(i*M/N));
+        let hi = (M>=N) ? Math.min(M-1, Math.floor((i+1)*M/N)-1) : lo;
+        if(hi < lo) hi = lo;
+        if(M > N){
+          const enNums = nums(enPieces[i]);
+          if(enNums.size){
+            let best=-1, bestScore=0;
+            const from=Math.max(0,lo-1), to=Math.min(M-1,hi+1);
+            for(let j=from;j<=to;j++){
+              const cnNums = nums(cnArr[j].textContent);
+              let sc=0; enNums.forEach(n=>{ if(cnNums.has(n)) sc++; });
+              if(sc>bestScore){ bestScore=sc; best=j; }
+            }
+            if(bestScore>0){
+              const w=hi-lo;
+              lo=Math.max(0, Math.min(M-1-w, best-Math.floor(w/2)));
+              hi=lo+w;
+            }
+          }
+        }
+        if(lo<prevLo) lo=prevLo;
+        if(hi<lo) hi=lo;
+        prevLo=lo;
+        ranges.push([lo,hi]);
+      }
+    })();
     let autoOpened = false;
+    function light(i,on){
+      const r = ranges[i]; if(!r || r[0]<0) return;
+      for(let j=r[0]; j<=r[1]; j++){
+        const cs = cnArr[j]; if(!cs) continue;
+        if(on) cs.classList.add('lit','hover-zoom'); else cs.classList.remove('lit','hover-zoom');
+      }
+    }
     box.addEventListener('mouseover', function(ev){
       const sp = ev.target && ev.target.closest ? ev.target.closest('.en-s') : null;
       if(!sp || !enEl.contains(sp)) return;
-      // 中文折叠时自动展开（记住自动状态，离开收回）
       if(cnEl && !cnEl.classList.contains('show')){
         autoOpened = true; cnEl.classList.add('show');
         const b = box.querySelector('.cn-toggle'); if(b) b.textContent = '▲ 收起';
       }
-      const i = +sp.dataset.i; sp.classList.add('hovered');
-      const cs = cnArr[i]; if(cs) cs.classList.add('lit','hover-zoom');
+      sp.classList.add('hovered'); light(+sp.dataset.i, true);
     });
     box.addEventListener('mouseout', function(ev){
       const sp = ev.target && ev.target.closest ? ev.target.closest('.en-s') : null;
       if(!sp || !enEl.contains(sp)) return;
-      const i = +sp.dataset.i; sp.classList.remove('hovered');
-      const cs = cnArr[i]; if(cs) cs.classList.remove('lit','hover-zoom');
+      sp.classList.remove('hovered'); light(+sp.dataset.i, false);
     });
     box.addEventListener('mouseleave', function(){
       if(autoOpened && cnEl){
