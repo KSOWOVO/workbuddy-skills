@@ -1,10 +1,13 @@
 ---
 name: daily-intel-briefing
 agent_created: true
-summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.3：IELTS 6.5 / 高中 3500 词难度），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
+summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：自检一键脚本化 validate_output.js；v6.3：IELTS 6.5 / 高中 3500 词难度），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
 description: >
   生成当日全球宏观、AI、科技硬件、游戏产业的英文简报时使用（20-30 分钟阅读量）。
   触发词：日报、简报、英文 briefing、今日资讯汇总、daily briefing、情报简报。
+  v6.4（2026-09-07 质量审查定型）：自检不再手写临时脚本——跑 `node references/validate_output.js <今日html>`
+  一键通过才交付（新增 DICT 词条数==母版 423 比对、chg 与 K 线自洽、pts 尾值==last）；国外信息源清单
+  实测扩充 6 个可直连源（见 references/brief-template.md）；指数卡口径统一 11 张（无恒生科技，要加用 hkHSTECH）。
   v6 硬约束（2026-09-02 用户定型）：
   ①语言难度 = IELTS 6.5 / 高中 3500 词：短句高频词，专有名词首次出现加简单英文解释+括号中文，如 rate hike(加息)；
   ②界面英文为主（导航/标题/提示），中文只出现在折叠中文全文翻译区与词汇表；
@@ -49,7 +52,7 @@ description: >
 3. 估值分位 → 用 pctSignal 逻辑给每指数 买/持有/卖 信号（30/70 法），中文解读讲"现在能不能定投"。
 4. 交叉核对数字：MCP > 交易所 > 媒体；无精确值 → (est.)+脚注，绝不编造。
 5. **组装 HTML（v6.2 铁律）**：以 `references/v6-sample-html.html` 为母版——复制其完整文件，然后仅改动：①`const IDX=[...]` 数据 ② `<body>` 内标题/日期/新闻/解读/表格正文 ③ 词表与脚注。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS（IDX 之后部分）一字不改**。产出同名 `.md`。
-6. **产出强制自检（不通过不许交付）**：对 HTML 运行 `node -e` 语法检查 + 逐项确认存在：`showSelTranslate`、`selectionchange`、`getContextSentence`、`sentencePairing`、`pctSignal`、`tmap.push`、`wordCount`、`toggleCn`、`en-s`；IDX 内指数 ≥9 条且含 `pct` 字段。**任何一项缺失 = 未完成，必须回到母版重新复制引擎**（禁止以"简版"交付）。
+6. **产出强制自检（不通过不许交付，v6.4 一键化）**：运行 `node <skill>/references/validate_output.js <今日.html>`（母版路径缺省自动取同目录）。脚本检查：`<script>` 可编译、引擎符号齐全（showSelTranslate/selectionchange/getContextSentence/sentencePairing/pctSignal/tmap/toggleCn/en-s 等）、IDX ≥9 条且含 pct、pts 尾值==last、chg 与 K 线自洽（±0.35pp）、pts 极差 <2.2x、**DICT 顶层词条数与母版一致（423，引擎区禁增删词）**、移动端双通道分支、日期存在、body 区非空。**输出 ALL PASS 才交付；任何 FAIL = 未完成，必须回到母版重新复制引擎**（禁止以"简版"交付，禁止删减检查项）。
 7. 最后 present_files（html 首位）。
 
 ## 详细模板
