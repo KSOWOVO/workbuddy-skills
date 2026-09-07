@@ -40,9 +40,11 @@ agent_created: true
 
 ## 关键坑（踩过，勿再踩）
 
+0. **MaaEnd 前置动作 useCmd=false 时参数会被吞**——`program=python.exe args=...` 启动了 python 但 argv 为空（静默无操作）。正解：`program=<某.cmd> args="" useCmd=true`，参数全部硬编码在 .cmd 内；.cmd 用探针日志（echo >> probe.log）+ 脚本自带 trace 双重验证是否真的执行
 1. 响应风格混用：`status` 与 `code` 两种都要兼容，否则把成功当失败
 2. 签名串 JSON **键序必须** `platform,timestamp,dId,vName`——顺序错 → 10000 请求异常
 3. MaaEnd 任务 JSON 是 JSONC：整行注释 + 行尾注释（`"enabled": false //xx`）都要剥，且要跳过字符串内的 `//`
 4. AutoFight* 等公共选项定义在 `tasks/pretasks/GameSetting.json`，不在任务文件本体
 5. `tasklist` 输出 GBK：`decode("gbk", errors="ignore")`
-6. 上游已知问题：启动自动更新弹窗阻断无人值守（#5343）；协议空间勿配应急理智加强剂（#4999）
+6. 工具链（bash/命令层）会把反斜杠归一化成正斜杠——写 .cmd/配置路径后必须显式校验并 `replace("/", chr(92))` 还原
+7. 上游已知问题：启动自动更新弹窗阻断无人值守（#5343）；协议空间勿配应急理智加强剂（#4999）；Agent start failed "status 0" 多为瞬态，重试即好
