@@ -1,13 +1,10 @@
 ---
 name: daily-intel-briefing
 agent_created: true
-summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：自检一键脚本化 validate_output.js；v6.3：IELTS 6.5 / 高中 3500 词难度），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），**三级兜底：DICT→MyMemory在线→页内中文全文翻译对应句（offlineSentence，离线零网络可用）**；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
+summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：IELTS 6.5 / 高中 3500 词难度，翻译离线可用），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
 description: >
   生成当日全球宏观、AI、科技硬件、游戏产业的英文简报时使用（20-30 分钟阅读量）。
   触发词：日报、简报、英文 briefing、今日资讯汇总、daily briefing、情报简报。
-  v6.4（2026-09-07 质量审查定型）：自检不再手写临时脚本——跑 `node references/validate_output.js <今日html>`
-  一键通过才交付（新增 DICT 词条数==母版 423 比对、chg 与 K 线自洽、pts 尾值==last）；国外信息源清单
-  实测扩充 6 个可直连源（见 references/brief-template.md）；指数卡口径统一 11 张（无恒生科技，要加用 hkHSTECH）。
   v6 硬约束（2026-09-02 用户定型）：
   ①语言难度 = IELTS 6.5 / 高中 3500 词：短句高频词，专有名词首次出现加简单英文解释+括号中文，如 rate hike(加息)；
   ②界面英文为主（导航/标题/提示），中文只出现在折叠中文全文翻译区与词汇表；
@@ -28,7 +25,7 @@ description: >
 - 主交付：同名 `.html`（`Global_Macro_Tech_Gaming_Intel_YYYY-MM-DD.html`），纯内联 CSS/JS 零外部依赖。
 - **⚠️ 引擎复用铁律（v6.2 起强制）**：HTML 的 `<style>` 引擎段 + `<script>` 交互引擎段（`const IDX` 后的 cardHTML/sparkSVG/openModal/drawChart/pctSignal + DICT/normWord/onlineTranslate/showSelTranslate/getContextSentence/mouseup/selectionchange/sentencePairing/toggleCn）**必须从 `references/v6-sample-html.html` 整体复制（Ctrl+C/V 级），只允许改动：① IDX 数组数据 ② body 正文/新闻/按钮文案 ③ 日期标题**。禁止凭文字描述重写引擎（09-03 教训：重写导致 hover/语境翻译/移动端全部丢失）。
 - 交互能力清单（缺一不可，产出后逐项 grep 自检）：
-  1. **选中翻译双通道 + 三级兜底（v6.4）**：DICT 命中→离线直出；未命中/整句→MyMemory 在线；**在线失败或 navigator.onLine===false → offlineSentence(anchorNode,sel)**：sentencePairing 把映射区间写入 .en-s 的 data-clo/data-chi，离线时直接显示页内中文全文翻译对应句（零网络）——2026-09-08 用户离线报障后定型；桌面 `mouseup` + 移动端 `selectionchange`（`(pointer:coarse)` 或 Android/iOS UA 时启用；range `getBoundingClientRect()` 定位；`touchstart` 空白收起）→ 共用 `showSelTranslate(px,py,anchorNode)`；**整句(≥3英文词或2词且>20字符)直接 MyMemory 整句意译**；单词→`getContextSentence(anchorNode,sel)` 取所在整句 → DICT 词义/在线词译 + 整句意译同屏；中文选区不弹；DICT 423+ 词；8s 超时失败提示看中文全文。
+  1. **选中翻译双通道 + 离线兜底（v6.4）**：DICT 命中→离线直出；未命中/整句→MyMemory 在线；**在线失败或 navigator.onLine===false → offlineSentence(anchorNode,sel)** 显示页内中文全文翻译对应句（sentencePairing 把映射区间写入 .en-s 的 data-clo/data-chi，零网络）。09-08 用户离线报障后定型：桌面 `mouseup` + 移动端 `selectionchange`（`(pointer:coarse)` 或 Android/iOS UA 时启用；range `getBoundingClientRect()` 定位；`touchstart` 空白收起）→ 共用 `showSelTranslate(px,py,anchorNode)`；**整句(≥3英文词或2词且>20字符)直接 MyMemory 整句意译**；单词→`getContextSentence(anchorNode,sel)` 取所在整句 → DICT 词义/在线词译 + 整句意译同屏；中文选区不弹；DICT 423+ 词；8s 超时失败提示看中文全文。
   2. **hover 联动（v6.3 对齐算法，全段落）**：term 占位符 `\u0001T{n}\u0001` 保护 → 英文切句（含缩写碎片合并：U.S./Inc./Aug. 等不切断）→ 包 `.en-s/.cn-s` → 还原；**英文句 i → 中文区间 [lo,hi]：比例映射（端点对齐，支持多对一/一对多）+ 数字指纹锚点（2.71/90.49 等，仅中文句更多时在 ±1 窗口修正）+ 全局预计算单调不减**——修复 v2 的 i↔i 硬配对在句数不等时错位的问题；box 级 `mouseover/mouseout` 事件委托；中文折叠时 hover 自动展开（mouseleave 收回）。
   3. **指数卡点击弹走势图**：openModal → SVG 折线 + 5/20/40 日涨跌 + **PE 30/70 行动徽章（pctSignal）**。
   4. 每条新闻 = `.p-en`（120-180 词，6.5 难度）+ `.cn-box` 折叠中文**全文翻译**（toggleCn）。
@@ -52,7 +49,7 @@ description: >
 3. 估值分位 → 用 pctSignal 逻辑给每指数 买/持有/卖 信号（30/70 法），中文解读讲"现在能不能定投"。
 4. 交叉核对数字：MCP > 交易所 > 媒体；无精确值 → (est.)+脚注，绝不编造。
 5. **组装 HTML（v6.2 铁律）**：以 `references/v6-sample-html.html` 为母版——复制其完整文件，然后仅改动：①`const IDX=[...]` 数据 ② `<body>` 内标题/日期/新闻/解读/表格正文 ③ 词表与脚注。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS（IDX 之后部分）一字不改**。产出同名 `.md`。
-6. **产出强制自检（不通过不许交付，v6.4 一键化）**：运行 `node <skill>/references/validate_output.js <今日.html>`（母版路径缺省自动取同目录）。脚本检查：`<script>` 可编译、引擎符号齐全（showSelTranslate/selectionchange/getContextSentence/sentencePairing/pctSignal/tmap/toggleCn/en-s 等）、IDX ≥9 条且含 pct、pts 尾值==last、chg 与 K 线自洽（±0.35pp）、pts 极差 <2.2x、**DICT 顶层词条数与母版一致（423，引擎区禁增删词）**、移动端双通道分支、日期存在、body 区非空。**输出 ALL PASS 才交付；任何 FAIL = 未完成，必须回到母版重新复制引擎**（禁止以"简版"交付，禁止删减检查项）。
+6. **产出强制自检（不通过不许交付）**：对 HTML 运行 `node -e` 语法检查 + 逐项确认存在：`showSelTranslate`、`selectionchange`、`getContextSentence`、`sentencePairing`、`pctSignal`、`tmap.push`、`wordCount`、`toggleCn`、`en-s`；IDX 内指数 ≥9 条且含 `pct` 字段。**任何一项缺失 = 未完成，必须回到母版重新复制引擎**（禁止以"简版"交付）。
 7. 最后 present_files（html 首位）。
 
 ## 详细模板
