@@ -1,6 +1,6 @@
 # 日报：信息源、踩坑清单与自动化提示词模板（v6.4）
 
-> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.3 = 2026-09-06 定型（v6.2 基础上修中英句对齐：比例映射+数字锚点，替代 i↔i 硬配对）**；**v6.4 = 2026-09-07 质量审查定型**：①自检脚本化——`references/validate_output.js <今日.html>` 一键 ALL PASS 才交付（替代每天手写临时 `_validate_*.js`，新增 DICT 词条数==母版 423 比对、chg 与 K 线自洽两项）；②国外可直连源清单实测扩充 6 个；③指数卡口径统一 11 张（见 Section 1）；④明确「DICT 引擎区禁增删词、md 最小结构」两条纪律（有历史漂移实例）。
+> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.3 = 2026-09-06 定型（v6.2 基础上修中英句对齐：比例映射+数字锚点，替代 i↔i 硬配对）**。
 
 ## ⚠️ v6.2 大改版说明（先读这段）
 
@@ -26,16 +26,16 @@
 5. **界面英文为主**：导航、区块标题、按钮、提示语用英文（如 `📊 Market Overview`、`🤖 AI Frontier`、`中文全文翻译` 按钮可保留中文因为它是中文翻译入口）；中文只出现在：中文全文翻译区、词汇表双语释义。
 6. **单词语境化翻译（v6.1 新增）**：选中单词时**不能只给孤立词义**——先用 `getContextSentence` 取该词所在英文整句，展示「【word】词义（DICT/在线）」+「整句 MyMemory 意译」，让用户看该词在句中的真实含义；中文选区不弹气泡。
 
-## 国外信息源（2026-09-01 首测 + 2026-09-07 二次实测，自动化时优先直连）
-- **WebFetch 可直连（实测通过，按板块分工）**：
-  - 游戏：`gamesindustry.biz`（行业数据 Newzoo/Sensor Tower，最优先）✅ · `videogameschronicle.com`（VGC，主机/3A 大作新闻）✅
-  - AI/科技：`theverge.com/tech` ✅ · `arstechnica.com/ai`（AI 深度报道）✅ · `techcrunch.com`（AI 初创/融资）✅
-  - 硬件/半导体：`techradar.com` ✅ · `tomshardware.com`（PC/半导体硬件）✅ · `anandtech.com`（已转型论坛，CPU/SoC）✅
-  - 半导体制造/存储深文：`semiengineering.com`（芯片设计/制造/HBM）✅ · `blocksandfiles.com`（存储/SSD/企业存储）✅
+## 国外信息源（2026-09-01 实测可用性，自动化时优先直连）
+- **WebFetch 可直连（实测通过）**：
+  - `gamesindustry.biz`（游戏行业，含 Newzoo/Sensor Tower 数据，最优先）✅
+  - `theverge.com/tech`（科技/消费电子）✅
+  - `techradar.com`（硬件/消费电子）✅
+  - `anandtech.com`（已转型论坛，CPU/SoC 讨论活跃）✅
 - **WebFetch 直连失败（被墙/超时，勿浪费时间重试）**：reuters.com、ft.com ✗
 - **绕过方案**：Reuters/FT/WSJ/Economist 的资讯用 **WebSearch 英文关键词**抓（走服务端，不受本机网络限制）；WebFetch 失败不代表搜索不到。
 - 数据源优先级：WebFetch 可直连源 > WebSearch（英文关键词 > 中文聚合）> MCP 行情。
-- 常用英文检索词：`"stock market today"`、`"Fed rate hike odds"`、`"semiconductor news"`、`"AI model release"`、`"gaming industry news"`、`"memory HBM price"`（存储行情走 semiengineering/blocksandfiles 比聚合站更一手）。
+- 常用英文检索词：`"stock market today"`、`"Fed rate hike odds"`、`"semiconductor news"`、`"AI model release"`、`"gaming industry news"`。
 
 ## 踩过的坑
 - **MCP 行情比估算准**：v1 曾估纳指100 日涨跌 -0.5%，westock 实际 +0.08% —— 指数日涨跌必须用 MCP/交易所数据，别用板块代理值。
@@ -61,10 +61,6 @@
   - CSS：`.en-s:hover{background:rgba(37,99,235,.10)}`，`.cn-s.lit{background:rgba(14,159,79,.16); font-size:1.04em}`（浅亮+平滑放大）。
 - **index 代码 vs K线**：westock `data_kline` 支持 `codes` 批量（最多实测 4 个一次成功）；美股用 `us.INX/us.NDX` 而非 `us.IXIC`。
 - 用户知识库：**Obsidian 优先**（`C:\Users\13662\Documents\Obsidian\40-个人生活\投资理财\`），关键词「PE 分位 定投 宽基」；ima 是备份（同批转写稿 8/31 上传）。《想提前退休》= PE 30/70 定投法+卖法；《存钱=亏钱》= M2 稀释+宽基=国运。
-- **v6.4 纪律 · DICT 引擎区禁增删词（2026-09-07 审查实证）**：母版 `const DICT` 顶层 423 条（`"word":"释义"` 扁平，每行一条）是引擎资产，产出必须与母版一致。抽查发现历史文件漂移：09-03 版 578 条、09-06 版 439 条（+16）——多为人工/回填往 DICT 加当日词所致。当日新词正确去处 = 正文 Section 5 词汇表（6-10 条 table）或选中翻译的 MyMemory 在线兜底。validate_output.js 第 4 项自动比对词条数，漂移即 FAIL。
-- **v6.4 · 自检统一用 references/validate_output.js（勿再每天复制临时 `_validate_*.js`）**：09-07 当天临时版有隐蔽 bug——body 锚点精确匹配 `<header class="hero">`，而 body 从文档导出时会带 `data-page-node-id` 属性 → bh0=-1 → body 残留检查形同虚设。通用脚本已改前缀匹配 `<header class="hero` 并参数化（`node validate_output.js <html> [母版]`，母版缺省取同目录）。
-- **v6.4 · est. 落点 = 括注 + Source 行，无需独立"脚注"元素**：SKILL 数据优先级写"无精确值→(est.)+脚注"，实际产出是正文 `(est.)` + 括注数据时点（「9/4 收盘」「口径: Wind/交易所」）+ 每条 Source 行带日期范围（如 `Source: TrendForce / DIGITIMES, 2–5 Sep`）——三者齐备即视为满足，不必额外造脚注区块。
-- **v6.4 · md 最小结构（防每日结构漂移）**：抽查 09-04/06 md ~6KB（含指数表），09-07 3KB、09-03 4KB 且无表。md 至少含：① 指数表（11 行：点位/涨跌/PE/分位/信号）② 主线要点（大盘+政策）③ 每节 1-3 行要旨 ④ 词汇表；3-6KB 足够，不必全文翻译。
 - 其余坑（口径、时点、宏观人物及时更新、游戏并购找公告）同前。
 
 ## 自动化每日出稿（提示词模板，直接复用）
@@ -85,7 +81,7 @@
 
 # 5 大板块
 ## Section 1 Market Overview（英文标题）
-- 国内宽基 8 卡（SH Comp/深成指/CSI300/CSI500/CSI1000/ChiNext/STAR50/红利低波）+ 港股境外 3 卡（HSI/S&P500/NDX100）＝**共 11 卡**（v6.4 统一口径，与母版 `const IDX` 一致；**不含恒生科技**——如当日需要，代码为 `hkHSTECH`，需在母版 IDX 区同格式补卡并同步模板数据源清单，否则别写 12 卡）。每卡：英文名+中文名 / 点位 / 当日涨跌 / PE / **10y 分位** / **行动徽章（pctSignal 自动给）**：
+- 国内宽基 8 卡（SH Comp/深成指/CSI300/CSI500/CSI1000/ChiNext/STAR50/红利低波）+ 港股境外 4 卡（HSI/HSTECH/S&P500/NDX100）。每卡：英文名+中文名 / 点位 / 当日涨跌 / PE / **10y 分位** / **行动徽章（pctSignal 自动给）**：
   - 分位<30 → `BUY zone · start DCA`（绿，可分批定投）
   - 30-70 → `HOLD · wait`（橙，持有等待）
   - >70 → `TRIM / wait`（红，不追高等回落）
@@ -101,10 +97,10 @@
 # 交互（v6.2 铁律：引擎整体复制母版，禁止重写）
 - **方法**：把 `references/v6-sample-html.html` 整个文件复制为今日文件 → 只改 ①`const IDX=[...]` 数据 ② body 正文/日期 ③ 词汇表。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS 一字不改**（母版已含全部：DICT 423+ / normWord / onlineTranslate / showSelTranslate / mouseup / selectionchange(移动端) / getContextSentence / sentencePairing(term占位) / pctSignal / openModal / toggleCn）。
 - 双通道翻译：桌面 mouseup + 移动端 selectionchange（pointer:coarse 或 Android/iOS UA，range 定位，touchstart 收起）；整句≥3词整句意译；单词语境化（词义+整句意译）。
-- **离线兜底（v6.4）**：sentencePairing 给每个 .en-s 写 data-clo/data-chi（v3 映射的中文句区间）；showSelTranslate 开头检测 navigator.onLine===false 直接跳过 fetch；在线失败/离线时调 offlineSentence(anchorNode,sel) 显示页内对应中文句——不依赖网络，断网也能看懂。
 - 涨红跌绿（A股）；估值色：红 over/橙 mid/绿 cheap。
+- **离线兜底（v6.4）**：sentencePairing 给每个 .en-s 写 data-clo/data-chi（v3 映射的中文句区间）；showSelTranslate 检测 navigator.onLine===false 直接跳过 fetch；在线失败/离线时 offlineSentence(anchorNode,sel) 显示页内对应中文句——不依赖网络。
 - **hover 句对齐 v3（勿回退到 i↔i 配对）**：英文切句先合并缩写碎片（U.S./Inc./Aug. 后接小写则并回），英文句 i 映射中文区间 [floor(i*M/N), floor((i+1)*M/N)-1]（多对一/一对多端点对齐），中文句更多时用数字指纹（每句提取 \d+ 序列求交集）在 ±1 窗口修正中心，区间全局预计算并保持单调不减。
-- **产出后自检（v6.4 一键化，缺一项不许交付）**：运行 `node references/validate_output.js <今日.html>`，输出 `=== ALL PASS ===` 才交付（脚本检查：script 编译/引擎符号/IDX≥9 含 pct/pts 尾值==last/chg 与 K 线自洽/DICT 词条数==母版 423/移动端分支/日期）。不再手写临时校验脚本。若需人工兜底 grep：`showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s`。
+- **产出后自检（缺一项不许交付）**：grep 必须全部命中 `showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s` `数字锚点`；`node -e` 语法检查通过；IDX 指数 ≥9 条含 pct 字段。
 
 # 工作流
 1. 并行：读 Obsidian 知识库 + westock data_kline + 6 组 WebSearch。
