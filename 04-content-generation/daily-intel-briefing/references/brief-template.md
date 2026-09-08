@@ -101,6 +101,7 @@
 # 交互（v6.2 铁律：引擎整体复制母版，禁止重写）
 - **方法**：把 `references/v6-sample-html.html` 整个文件复制为今日文件 → 只改 ①`const IDX=[...]` 数据 ② body 正文/日期 ③ 词汇表。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS 一字不改**（母版已含全部：DICT 423+ / normWord / onlineTranslate / showSelTranslate / mouseup / selectionchange(移动端) / getContextSentence / sentencePairing(term占位) / pctSignal / openModal / toggleCn）。
 - 双通道翻译：桌面 mouseup + 移动端 selectionchange（pointer:coarse 或 Android/iOS UA，range 定位，touchstart 收起）；整句≥3词整句意译；单词语境化（词义+整句意译）。
+- **离线兜底（v6.4）**：sentencePairing 给每个 .en-s 写 data-clo/data-chi（v3 映射的中文句区间）；showSelTranslate 开头检测 navigator.onLine===false 直接跳过 fetch；在线失败/离线时调 offlineSentence(anchorNode,sel) 显示页内对应中文句——不依赖网络，断网也能看懂。
 - 涨红跌绿（A股）；估值色：红 over/橙 mid/绿 cheap。
 - **hover 句对齐 v3（勿回退到 i↔i 配对）**：英文切句先合并缩写碎片（U.S./Inc./Aug. 后接小写则并回），英文句 i 映射中文区间 [floor(i*M/N), floor((i+1)*M/N)-1]（多对一/一对多端点对齐），中文句更多时用数字指纹（每句提取 \d+ 序列求交集）在 ±1 窗口修正中心，区间全局预计算并保持单调不减。
 - **产出后自检（v6.4 一键化，缺一项不许交付）**：运行 `node references/validate_output.js <今日.html>`，输出 `=== ALL PASS ===` 才交付（脚本检查：script 编译/引擎符号/IDX≥9 含 pct/pts 尾值==last/chg 与 K 线自洽/DICT 词条数==母版 423/移动端分支/日期）。不再手写临时校验脚本。若需人工兜底 grep：`showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s`。
