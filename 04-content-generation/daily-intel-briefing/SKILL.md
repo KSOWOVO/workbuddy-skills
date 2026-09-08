@@ -1,7 +1,7 @@
 ---
 name: daily-intel-briefing
 agent_created: true
-summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：自检一键脚本化 validate_output.js；v6.3：IELTS 6.5 / 高中 3500 词难度），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
+summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：自检一键脚本化 validate_output.js；v6.3：IELTS 6.5 / 高中 3500 词难度），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），**三级兜底：DICT→MyMemory在线→页内中文全文翻译对应句（offlineSentence，离线零网络可用）**；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
 description: >
   生成当日全球宏观、AI、科技硬件、游戏产业的英文简报时使用（20-30 分钟阅读量）。
   触发词：日报、简报、英文 briefing、今日资讯汇总、daily briefing、情报简报。
@@ -28,7 +28,7 @@ description: >
 - 主交付：同名 `.html`（`Global_Macro_Tech_Gaming_Intel_YYYY-MM-DD.html`），纯内联 CSS/JS 零外部依赖。
 - **⚠️ 引擎复用铁律（v6.2 起强制）**：HTML 的 `<style>` 引擎段 + `<script>` 交互引擎段（`const IDX` 后的 cardHTML/sparkSVG/openModal/drawChart/pctSignal + DICT/normWord/onlineTranslate/showSelTranslate/getContextSentence/mouseup/selectionchange/sentencePairing/toggleCn）**必须从 `references/v6-sample-html.html` 整体复制（Ctrl+C/V 级），只允许改动：① IDX 数组数据 ② body 正文/新闻/按钮文案 ③ 日期标题**。禁止凭文字描述重写引擎（09-03 教训：重写导致 hover/语境翻译/移动端全部丢失）。
 - 交互能力清单（缺一不可，产出后逐项 grep 自检）：
-  1. **选中翻译双通道**：桌面 `mouseup` + 移动端 `selectionchange`（`(pointer:coarse)` 或 Android/iOS UA 时启用；range `getBoundingClientRect()` 定位；`touchstart` 空白收起）→ 共用 `showSelTranslate(px,py,anchorNode)`；**整句(≥3英文词或2词且>20字符)直接 MyMemory 整句意译**；单词→`getContextSentence(anchorNode,sel)` 取所在整句 → DICT 词义/在线词译 + 整句意译同屏；中文选区不弹；DICT 423+ 词；8s 超时失败提示看中文全文。
+  1. **选中翻译双通道 + 三级兜底（v6.4）**：DICT 命中→离线直出；未命中/整句→MyMemory 在线；**在线失败或 navigator.onLine===false → offlineSentence(anchorNode,sel)**：sentencePairing 把映射区间写入 .en-s 的 data-clo/data-chi，离线时直接显示页内中文全文翻译对应句（零网络）——2026-09-08 用户离线报障后定型；桌面 `mouseup` + 移动端 `selectionchange`（`(pointer:coarse)` 或 Android/iOS UA 时启用；range `getBoundingClientRect()` 定位；`touchstart` 空白收起）→ 共用 `showSelTranslate(px,py,anchorNode)`；**整句(≥3英文词或2词且>20字符)直接 MyMemory 整句意译**；单词→`getContextSentence(anchorNode,sel)` 取所在整句 → DICT 词义/在线词译 + 整句意译同屏；中文选区不弹；DICT 423+ 词；8s 超时失败提示看中文全文。
   2. **hover 联动（v6.3 对齐算法，全段落）**：term 占位符 `\u0001T{n}\u0001` 保护 → 英文切句（含缩写碎片合并：U.S./Inc./Aug. 等不切断）→ 包 `.en-s/.cn-s` → 还原；**英文句 i → 中文区间 [lo,hi]：比例映射（端点对齐，支持多对一/一对多）+ 数字指纹锚点（2.71/90.49 等，仅中文句更多时在 ±1 窗口修正）+ 全局预计算单调不减**——修复 v2 的 i↔i 硬配对在句数不等时错位的问题；box 级 `mouseover/mouseout` 事件委托；中文折叠时 hover 自动展开（mouseleave 收回）。
   3. **指数卡点击弹走势图**：openModal → SVG 折线 + 5/20/40 日涨跌 + **PE 30/70 行动徽章（pctSignal）**。
   4. 每条新闻 = `.p-en`（120-180 词，6.5 难度）+ `.cn-box` 折叠中文**全文翻译**（toggleCn）。
