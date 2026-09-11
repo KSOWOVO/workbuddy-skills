@@ -68,12 +68,20 @@ curl -sL -A "Mozilla/5.0 ... Chrome/120.0" -e "<官网下载页URL>" "<直链>" 
 ### 6. 交付
 `present_files`；正文写清版本/大小/哈希/签名者/是否在线安装器/安装步骤；清理临时文件。
 
-## 三个致命坑
+## 四个致命坑
 
 1. **Defender ExitCode 2 ≠ 检出病毒。** 非管理员下 `MpCmdRun -Scan -ScanType 3` 返回
    `hr = 0x80004005`、退出码 2，是**权限失败**。用 `Get-MpThreatDetection` 判定。别去提权。
 2. **PowerShell 工具在本机不返回 stdout。** 必须 `| Out-File <path> -Encoding utf8` 再 Read。
 3. **`curl -o /tmp/x.json` 在 Git Bash 下会静默失败。** 一律用工作区绝对路径。
+4. **代理下 curl 默认 HTTP/2 会静默失败**（`CONNECT 200` 后 TLS 断、`HTTP=000`、
+   `no ALPN negotiated`，易误判成"网站挂了"）。**所有 curl 一律加 `--http1.1`**。
+   附带：GitHub release 的 Range 请求在 302 链上会丢，先 `curl -sIL` 拿最终签名 URL 再发 `-r`。
+
+## 商店独占应用（无独立安装包）
+
+官方只发商店时**先如实告知，别拿 CLI / 旧版冒充**（红线 0）。取证三步与 PE 头判 GUI/CLI 的方法，
+见 `references/store-forensics.md`「商店独占」小节。
 
 ## 参考文件（按需 Read，勿一次全读）
 

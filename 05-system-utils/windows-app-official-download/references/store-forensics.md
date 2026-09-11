@@ -70,3 +70,54 @@ curl -sL -A "Mozilla/5.0 Chrome/120.0" \
 
 核对 `<link rel="canonical" href="https://sj.qq.com/appdetail/<包名>">` 与
 `dt-params="...appdetail_status=常规详情页"`，确认是正规上架而非下架/风险应用。
+
+## 商店独占（无独立安装包）的取证
+
+用户要"安装包"、但官方只发商店时，**先如实告知，别拿 CLI 或旧版冒充**（红线 0）。三步取证：
+
+**1. `winget show` 看真实身份**
+
+```bash
+winget show --id <商店ID> --source msstore --accept-source-agreements --disable-interactivity
+```
+
+看 `PackageName` / `Publisher` / 描述。**商店 ID 会随应用合并而变化，同名不同 ID 必须分辨。**
+
+> 实测案例（2026-09）：`9PLM9XGG6VKS` = ChatGPT（OpenAI 发布，包族名仍是
+> `OpenAI.Codex_2p2nqsd0c76g0`，由原 Codex 应用升级而来，内含 Codex 模式）；
+> `9NT1R1C2HH7J` = **ChatGPT Classic 旧版，不带 Codex**。要 Codex 必须装前者。
+
+**2. 官方包清单里有没有 CDN 直链**
+
+```bash
+curl -sL --http1.1 "https://storeedgefd.dsx.mp.microsoft.com/v9.0/packageManifests/<ID>?market=US&locale=en-us&deviceFamily=Windows.Desktop"
+```
+
+返回里**没有任何包下载 URL**（只有许可条款类链接）＝确无独立包。
+`displaycatalog.mp.microsoft.com/v7.0/products/lookup` 端点会返回 **400**，别浪费时间。
+
+**3. 离线 MSIX 拿不拿得到**
+
+`winget download --id <ID> --source msstore` 会要求 **Microsoft Entra ID 身份验证**，
+且账号须是全局管理员 / 用户管理员 / 许可证管理员成员 → **个人账号无解**。
+
+## PE 头判定：这到底是 GUI 还是命令行
+
+体积大不等于有图形界面。取前 16KB 读 PE 头即可定性：
+
+```bash
+# GitHub release 的 Range 请求在 302 链上会丢，先 -sIL 拿最终签名 URL 再 -r
+curl -s --http1.1 -r 0-16383 "<最终 CDN 签名 URL>" -o head.bin
+```
+
+```python
+import struct
+d = open('head.bin','rb').read()
+lf = struct.unpack_from('<I', d, 0x3c)[0]          # e_lfanew
+opt = lf + 24                                       # Optional header 起点
+sub = struct.unpack_from('<H', d, opt + 68)[0]      # subsystem
+# 2 = GUI 窗口程序   3 = CUI 控制台（命令行）
+```
+
+> 实测：Codex 的 `codex-x86_64-pc-windows-msvc.exe` 有 281MB，看着像桌面应用，
+> 但 `subsystem=3` —— 是 CLI，Rust 二进制内嵌资源导致体积虚高。
