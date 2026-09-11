@@ -1,7 +1,7 @@
 ---
 name: daily-intel-briefing
 agent_created: true
-summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v6.4：IELTS 6.5 / 高中 3500 词难度，翻译离线可用），HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
+summary: 生成「全球宏观·AI·科技硬件·游戏」英文日报（v7：IELTS 6.5 / 高中 3500 词难度）。HTML 主交付：英文界面+折叠中文全文翻译；选中翻译三级兜底（词典→在线→页内对应句，离线可用）；句级 hover 联动用 DOM 文本节点包装（无占位符，杜绝乱码）；指数卡 PE 30/70 行动徽章。，HTML 主交付：英文界面+每段折叠中文全文翻译；桌面 mouseup + 移动端 selectionchange 双通道选词翻译（任意设备可用），单词=结合语境词义+整句意译；英文句 hover 联动中文句（v3 比例映射+数字锚点对齐，句数不等也准）；指数卡 PE 十年分位 30/70 行动徽章。
 description: >
   生成当日全球宏观、AI、科技硬件、游戏产业的英文简报时使用（20-30 分钟阅读量）。
   触发词：日报、简报、英文 briefing、今日资讯汇总、daily briefing、情报简报。
@@ -25,32 +25,6 @@ description: >
 - 主交付：同名 `.html`（`Global_Macro_Tech_Gaming_Intel_YYYY-MM-DD.html`），纯内联 CSS/JS 零外部依赖。
 - **⚠️ 引擎复用铁律（v6.2 起强制）**：HTML 的 `<style>` 引擎段 + `<script>` 交互引擎段（`const IDX` 后的 cardHTML/sparkSVG/openModal/drawChart/pctSignal + DICT/normWord/onlineTranslate/showSelTranslate/getContextSentence/mouseup/selectionchange/sentencePairing/toggleCn）**必须从 `references/v6-sample-html.html` 整体复制（Ctrl+C/V 级），只允许改动：① IDX 数组数据 ② body 正文/新闻/按钮文案 ③ 日期标题**。禁止凭文字描述重写引擎（09-03 教训：重写导致 hover/语境翻译/移动端全部丢失）。
 - 交互能力清单（缺一不可，产出后逐项 grep 自检）：
-  1. **选中翻译双通道 + 离线兜底（v6.4）**：DICT 命中→离线直出；未命中/整句→MyMemory 在线；**在线失败或 navigator.onLine===false → offlineSentence(anchorNode,sel)** 显示页内中文全文翻译对应句（sentencePairing 把映射区间写入 .en-s 的 data-clo/data-chi，零网络）。09-08 用户离线报障后定型：桌面 `mouseup` + 移动端 `selectionchange`（`(pointer:coarse)` 或 Android/iOS UA 时启用；range `getBoundingClientRect()` 定位；`touchstart` 空白收起）→ 共用 `showSelTranslate(px,py,anchorNode)`；**整句(≥3英文词或2词且>20字符)直接 MyMemory 整句意译**；单词→`getContextSentence(anchorNode,sel)` 取所在整句 → DICT 词义/在线词译 + 整句意译同屏；中文选区不弹；DICT 423+ 词；8s 超时失败提示看中文全文。
-  2. **hover 联动（v6.3 对齐算法，全段落）**：term 占位符 `\u0001T{n}\u0001` 保护 → 英文切句（含缩写碎片合并：U.S./Inc./Aug. 等不切断）→ 包 `.en-s/.cn-s` → 还原；**英文句 i → 中文区间 [lo,hi]：比例映射（端点对齐，支持多对一/一对多）+ 数字指纹锚点（2.71/90.49 等，仅中文句更多时在 ±1 窗口修正）+ 全局预计算单调不减**——修复 v2 的 i↔i 硬配对在句数不等时错位的问题；box 级 `mouseover/mouseout` 事件委托；中文折叠时 hover 自动展开（mouseleave 收回）。
-  3. **指数卡点击弹走势图**：openModal → SVG 折线 + 5/20/40 日涨跌 + **PE 30/70 行动徽章（pctSignal）**。
-  4. 每条新闻 = `.p-en`（120-180 词，6.5 难度）+ `.cn-box` 折叠中文**全文翻译**（toggleCn）。
-- 辅助：同名 `.md`（英文+中文摘要），present_files 一次呈现（html 首位）。
+  1. **选中翻译三级兜底**：DICT 命中→离线直出；未命中/整句→MyMemory 在线（输入先做 HTML 实体解码 decodeEnt + 450 字符按句界截断 clip450）；**在线失败或 navigator.onLine===false → offlineSentence()** 显示页内中文全文翻译对应句（零网络）。双通道触发：桌面 mouseup、移动端 selectionchange（pointer:coarse/UA，range 定位，touchstart 收起）。
+  2. **hover 句级联动（v7 架构）**：用 `document.createTreeWalker` 遍历 `.p-en`/`.p-cn` 的**文本节点**，按句边界就地包 `<span class="en-s">`/`<span class="cn-s">`（英文切句含缩写合并；中文用 cnSentBounds 按 。！？； 切）——**不再使用任何占位符**（v6 的 \u0001T{n}\u0001 控制字符经 innerHTML 序列化会变成 &#1; 文本，是乱码根源）；对齐沿用 v3 比例映射+数字锚点+单调约束，区间写 data-clo/data-chi；box 级 mouseover/mouseout 委托；中文折叠时 hover 自动展开。
 
-## 语言标准（v6.2 硬约束）
-- **难度 IELTS 6.5 / 高中 3500 词**：短句、高频词、避免 7.5+ 级难词；专有名词首次出现用简单英文解释+括号中文（rate hike=加息、bond yield=收益率、equity risk premium=股权风险溢价）。
-- **界面英文为主**：导航/区块标题/按钮/提示用英文；中文只出现在折叠中文全文翻译区与词汇表。
-- 每段配**完整中文全文翻译**（逐句对应，250-400 字，不是摘要）。
-- 全篇无问候、无签名。
-
-## 数据源优先级
-1. **westock-mcp `data_kline`** 拉指数日K线：sh000001/sh000300/sh000905/sh000852/sh000688/sz399001/sz399006/hkHSI/us.INX/us.NDX，limit:60-130；红利低波 `csH30269` 有日K线（无盘中bar）→ 用上交易日收盘出卡 + 脚注。
-2. **知识库（Obsidian 优先）**：`C:\Users\13662\Documents\Obsidian\40-个人生活\投资理财\想提前退休…md`（PE 30/70 定投+卖法）、《存钱=亏钱…md》（M2 稀释/宽基=国运）；ima-mcp 兜底 `search_knowledge`。
-3. **WebSearch（Tier-1）**：宏观/美联储/地缘/公司新闻/估值分位。
-4. 估值分位冲突时优先交易所口径，脚注注明来源日期。
-
-## 工作流（务必执行）
-1. 并行：读 Obsidian 知识库 + westock `data_kline`（批量）+ WebSearch 6 组（美股/A股港股/美债美联储/AI/半导体/游戏）。
-2. 用 K 线算近 5/20/40 日涨跌（last/pts[n-1-k]-1），当日涨跌用最新两根 close 差。
-3. 估值分位 → 用 pctSignal 逻辑给每指数 买/持有/卖 信号（30/70 法），中文解读讲"现在能不能定投"。
-4. 交叉核对数字：MCP > 交易所 > 媒体；无精确值 → (est.)+脚注，绝不编造。
-5. **组装 HTML（v6.2 铁律）**：以 `references/v6-sample-html.html` 为母版——复制其完整文件，然后仅改动：①`const IDX=[...]` 数据 ② `<body>` 内标题/日期/新闻/解读/表格正文 ③ 词表与脚注。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS（IDX 之后部分）一字不改**。产出同名 `.md`。
-6. **产出强制自检（不通过不许交付）**：对 HTML 运行 `node -e` 语法检查 + 逐项确认存在：`showSelTranslate`、`selectionchange`、`getContextSentence`、`sentencePairing`、`pctSignal`、`tmap.push`、`wordCount`、`toggleCn`、`en-s`；IDX 内指数 ≥9 条且含 `pct` 字段。**任何一项缺失 = 未完成，必须回到母版重新复制引擎**（禁止以"简版"交付）。
-7. 最后 present_files（html 首位）。
-
-## 详细模板
-见 `references/brief-template.md`（信息源清单、交互实现细节、踩坑记录、自动化提示词完整模板）。
