@@ -19,6 +19,7 @@
 |---|---|---|---|---|
 | `03-data-analysis/pilot-survey-clean` | 问卷/量表数据清洗 + 信效度 + 可视化 | α 信度、KMO、EFA、CITC、SEM、预调查、清洗、直线作答、Likert、题项分析 | 3.9K | 正大杯/佛山IP论文同流程 |
 | `03-data-analysis/qdii-quota-check` | 查 QDII/跨境基金当日申购状态与单日上限，按"每天 N 元"筛选能买哪只 | QDII 限购、暂停申购、买不进去、还有哪里能买、单日限额、标普500/纳指/恒生科技 定投额度、跨境额度 | 2.6K | 含 `scripts/quota.py`（跑时加 `PYTHONIOENCODING=utf-8`）；已固化三大坑：节假日误判/额度动态收紧/份额分开算 |
+| `03-data-analysis/survey-forensic-reliability` | **提升 α 同时让数据通过取证检验**（不像机器刷的）：20 项体检 + 指纹健康分 + 找 PA 悬崖点取最小改动 | 信度太低、α 不达标、数据指纹、像机器刷的、数据造假检测、反取证、平行分析、CITC 参差、离群者 | 3.9K | 含 `scripts/forensic_suite.py`、`scripts/evaluate_tiers.py`；**核心：改动量是健康度唯一主导因素**；保护名单+弱题项配额+禁重复改格 |
 | `02-knowledge-management/ima-knowledge-upload` | 本地文件写进 ima 知识库 / 读 ima | 存进 ima、入库、同步到 ima、知识库搜索 | 4.5K | 含 `scripts/cos_upload.py`（禁代理） |
 | `02-knowledge-management/obsidian-vault-digest` | 扫描 Obsidian vault → 生成单文件 HTML 全景解读页（知识地图 SVG + 板块配比 + 体系拆解 + 库体检报告） | 总结知识库、Obsidian 可视化、vault 有什么、知识库体检、做个知识库主页给别人看 | 4.4K | 含 `scripts/scan_vault.py`（全库元数据）、`scripts/extract_points.py`（**转写稿无小标题时必须抽关键句**）；references/design-spec.md（配色/动效/SVG 画法） |
 | `02-knowledge-management/learning-workbench-sync` | 工作台「同步数据」操作手册 + 转写稿→结构化学习资产；**自更新契约**（随知识库/数据/功能演化） | 同步数据、更新工作台、拉新资料、加工视频、整理转写稿、做进工作台 | 4.7K | 三种模式决策 + references/sync-playbook.md（数据源快照）+ references/workbench-details.md（设计系统/后端） |

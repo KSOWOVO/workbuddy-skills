@@ -1,0 +1,12 @@
+{
+  "name": "腾讯自选股·金融数据查询",
+  "installedAt": 1787655167722,
+  "source": "marketplace",
+  "version": "1.0.2",
+  "skillId": "skill_2091018464477057024",
+  "description_zh": "基于腾讯自选股行情数据接口的结构化金融数据查询底座：支持 A股/港股/美股个股、指数、ETF、板块、期货、外汇、可转债的 K 线与分时行情、财务报表、资金流向、技术指标、筹码成本、股东结构、分红除权、业绩预告、龙虎榜、大宗交易、融资融券等数据查询，并覆盖行业经营数据、申万行业估值与全球宏观经济数据。",
+  "description_en": "A structured financial data query platform based on Tencent's self-selected stock market data interface: Supports K-line and intraday market data, financial statements, capital flows, technical indicators, cost of shares, shareholder structure, dividend ex-rights, earnings forecasts, top gainers and losers lists, block trades, margin trading and securities lending, etc. for A-shares/Hong Kong stocks/US stocks, indices, ETFs, sectors, futures, foreign exchange, and convertible bonds. It also covers industry operating data, Shenwan industry valuations and global macroeconomic data.",
+  "iconSource": "https://openplatform-cdn.codebuddy.cn/public/2b84a8b7-c87b-4c50-857a-69dc414135a9/avatar/skill/au_43dd0948-ec9.png",
+  "iconLocalPath": "C:\\Users\\13662\\.workbuddy\\skills\\westock-data\\_icon.png",
+  "iconDownloadedFrom": "https://openplatform-cdn.codebuddy.cn/public/2b84a8b7-c87b-4c50-857a-69dc414135a9/avatar/skill/au_43dd0948-ec9.png"
+}
