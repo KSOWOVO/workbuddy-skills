@@ -25,6 +25,7 @@
 | `01-browser-automation/browser-ocr` | 浏览器自动化 + **双引擎 OCR（PaddleOCR 优先 + RapidOCR 兜底）**；模型不识图时的本地 OCR 兜底 | 打开网页、点击、截图、验证码、表格图识别、识别截图、OCR 兜底 | 4.9K | 含 `scripts/agent-browser.sh`、`ocr.py`；**paddle 必须 3.1.0**（3.3.x 有 oneDNN bug） |
 | `04-content-generation/daily-intel-briefing` | 英文日报 **v6**（宏观·AI·硬件·游戏）IELTS 6.5/高中3500词，PE分位 BUY/HOLD/TRIM | 日报、简报、英文 briefing、智库日报 | 5.0K | 模板已拆 `references/` |
 | `04-content-generation/exam-wordbank-workspace` | 备考工作台**内置大词库**合成（KyleBing 词表 + ECDict + ipa-dict → 数千词带音标/词性/释义/搭配）+ 单文件 HTML + 资料库分片双向同步 | 背词台、备考台、单词工作台、内置词库、艾宾浩斯、四级/六级/考研/雅思词汇表、词表要带音标、塞 3500 个词 | 3.6K | 含 `scripts/build_words.py`（--kb-file/--target 可调）+ `references/library-sync.md`（page 上传 + database 分片同步 SDK 契约）|
+| `04-content-generation/svg-to-animated-gif` | 矢量插画 → **无缝循环 GIF**（无头 Edge 一次截「N 帧网格」+ 整数周期法） | 做成 GIF、生成动图、让插画动起来、animate this SVG、循环动画、动图帧 | 2.4K | 含 `scripts/grid_to_gif.py`（改 CONFIG + `frame(t)` 即可复用）+ `references/loop_math.md`（无缝循环周期对齐）；**别装 cairosvg/playwright，用现成 Edge** |
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
 | `05-system-utils/windows-app-official-download` | 取 Windows 软件官方正版包（含地区限制绕过）+ 签名/Defender 双校验 | 下载 Windows/电脑/PC 版、地区问题下不了、商店区域限制、官方无毒包、第三方站不放心、有没有原生 Win 版 | 4.6K | **只下载不代装、不改系统设置**；references/store-forensics.md（判读 `installer.type`）+ verify-playbook.md（Defender ExitCode 2 是权限失败非检出） |
@@ -46,7 +47,7 @@
 01-browser-automation/   浏览器、网页自动化、截图识别
 02-knowledge-management/ 知识库、笔记、内容加工
 03-data-analysis/        数据清洗、统计、问卷、可视化
-04-content-generation/   简报、写作、日报
+04-content-generation/   简报、写作、日报、插画动图（GIF）
 05-system-utils/         系统工具：软件下载取证、官方包校验、安装器安全核验
 10- ~ 80-/               预留新功能域（两位数前缀）
 90-tooling/              工具、基础设施、元技能（router/backup）
