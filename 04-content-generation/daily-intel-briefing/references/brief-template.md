@@ -1,6 +1,6 @@
-# 日报：信息源、踩坑清单与自动化提示词模板（v6.4）
+# 日报：信息源、踩坑清单与自动化提示词模板（v7）
 
-> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v6.3 = 2026-09-06 定型（v6.2 基础上修中英句对齐：比例映射+数字锚点，替代 i↔i 硬配对）**。
+> 从 SKILL.md 拆出的细节章节，仅在需要时读取。**v7（2026-09-11）= TreeWalker DOM 句包装（根治占位符乱码）+ 中文切句 cnSentBounds + 翻译输入硬化（decodeEnt/clip450）+ 离线兜底 offlineSentence**；v6.3 句对齐（比例映射+数字锚点）沿用。
 
 ## ⚠️ v6.2 大改版说明（先读这段）
 
@@ -98,9 +98,10 @@
 - **方法**：把 `references/v6-sample-html.html` 整个文件复制为今日文件 → 只改 ①`const IDX=[...]` 数据 ② body 正文/日期 ③ 词汇表。**`<style>` 引擎 CSS 与 `<script>` 引擎 JS 一字不改**（母版已含全部：DICT 423+ / normWord / onlineTranslate / showSelTranslate / mouseup / selectionchange(移动端) / getContextSentence / sentencePairing(term占位) / pctSignal / openModal / toggleCn）。
 - 双通道翻译：桌面 mouseup + 移动端 selectionchange（pointer:coarse 或 Android/iOS UA，range 定位，touchstart 收起）；整句≥3词整句意译；单词语境化（词义+整句意译）。
 - 涨红跌绿（A股）；估值色：红 over/橙 mid/绿 cheap。
-- **离线兜底（v6.4）**：sentencePairing 给每个 .en-s 写 data-clo/data-chi（v3 映射的中文句区间）；showSelTranslate 检测 navigator.onLine===false 直接跳过 fetch；在线失败/离线时 offlineSentence(anchorNode,sel) 显示页内对应中文句——不依赖网络。
+- **离线兜底（v6.4 起，v7 沿用）**：sentencePairing 给每个 .en-s 写 data-clo/data-chi（v3 映射的中文句区间）；showSelTranslate 检测 navigator.onLine===false 直接跳过 fetch；在线失败/离线时 offlineSentence(anchorNode,sel) 显示页内对应中文句——不依赖网络。
+- **v7 架构要点**：句包装走 TreeWalker 文本节点（`document.createTreeWalker(root, NodeFilter.SHOW_TEXT)`），按句边界 `replaceChild(DocumentFragment)` 就地包 span；英文切句 `sentBounds`（含缩写合并 ABBR），中文切句 `cnSentBounds`（。！？；）——**两者不可混用**（v7 初版混用导致 cn-s 只剩 12 个）。
 - **hover 句对齐 v3（勿回退到 i↔i 配对）**：英文切句先合并缩写碎片（U.S./Inc./Aug. 后接小写则并回），英文句 i 映射中文区间 [floor(i*M/N), floor((i+1)*M/N)-1]（多对一/一对多端点对齐），中文句更多时用数字指纹（每句提取 \d+ 序列求交集）在 ±1 窗口修正中心，区间全局预计算并保持单调不减。
-- **产出后自检（缺一项不许交付）**：grep 必须全部命中 `showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s` `数字锚点`；`node -e` 语法检查通过；IDX 指数 ≥9 条含 pct 字段。
+- **产出后自检（缺一项不许交付）**：grep 必须全部命中 `createTreeWalker` `cnSentBounds` `showSelTranslate` `selectionchange` `getContextSentence` `sentencePairing` `pctSignal` `toggleCn` `en-s` `数字锚点` `offlineSentence` `data-clo`；**文件中不得出现 `\u0001T` 占位符**（乱码源，v7 已废弃）；`node -e` 语法检查通过；IDX 指数 ≥9 条含 pct 字段；浏览器实测：选中一个未收录词应弹出翻译（在线意译或离线页内对应句），hover 英文句应点亮对应中文句。
 
 # 工作流
 1. 并行：读 Obsidian 知识库 + westock data_kline + 6 组 WebSearch。
