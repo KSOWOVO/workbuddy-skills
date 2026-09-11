@@ -71,6 +71,20 @@ git push -u origin main
 - **⚠️ 本机 Git Bash 怪癖：`env -u ...` 前缀会吞掉 python 的 stdout（2026-09-02 实测）**——`env -u http_proxy ... python script.py` 时，python 的 print 全部不可见（exit 仍 0），连重定向到文件都是空的。所以**「脚本 exit 0 + 无输出」不代表同步成功**；判断成败必须以云端 sha/commits 为准（见下一条），或不用 `env -u`（脚本内部 ProxyHandler({}) 已足够禁代理）。
 - **⚠️ api.github.com Contents API 的 GET 有边缘缓存（2026-09-02 实测）**：PUT 推完立即 `GET /contents/<path>` 可能仍返回**旧 sha**（几分钟内），会误判成推送失败。验证时加 cache-bust 参数：`GET /contents/<path>?nocache=$(date +%s)`，或直接 `GET /commits?per_page=3` 看最新 commit message。
 - **行尾差异导致 blob sha 与本地不同（正常现象）**：Windows 工作区文件是 CRLF，git 对象是 LF，API 上传的是工作区内容 → 云端 blob sha ≠ 本地 `git ls-files -s` 的 sha（如本地 c1262350…、云端 295625d…），但内容逐字一致。对齐验证以「内容 + commit」为准，不要死等 sha 字面相等；API 推送产生的云端 commit sha 也会与本地不同（fd75683 vs 287db24），属正常。
+- **🚨 沙箱内跑 git 写操作会被静默丢弃（2026-09-11 实测，危害最大的一个坑）**：对 `~/.workbuddy/skills`（**workspace 之外的路径**）用**默认沙箱**执行 `git add / commit` 时：命令 exit 0、`git log` 甚至能读到新提交，但**命令结束后 `.git/objects` 里没有新对象、`.git/refs` 目录整个消失** → `fatal: not a git repository` / `bad object HEAD`，仓库直接失联。已存在文件的修改（index / logs / COMMIT_EDITMSG）会保留，**只有新建对象不落盘**——所以表面"成功"极具迷惑性。
+  **对策**：所有对 `~/.workbuddy/skills` 的 git **写**操作，Bash 调用必须加 `dangerouslyDisableSandbox: true`。只读操作（status / log / ls-files / diff）不受影响。
+  **仓库破损恢复姿势（工作区文件全程不丢，已实测有效）**：
+  ```bash
+  SK="$HOME/.workbuddy/skills"
+  git clone --no-checkout https://github.com/KSOWOVO/workbuddy-skills.git /d/wbtmp/skills-clone
+  mv "$SK/.git" "$SK/.git.broken"                  # 先备份旧元数据
+  cp -r /d/wbtmp/skills-clone/.git "$SK/.git"      # 换上远程的干净元数据
+  git -C "$SK" reset --mixed HEAD                  # ⚠️ 关键！--no-checkout 留下的是「空索引」，不补这步所有文件都会显示为「已删除」
+  git -C "$SK" config user.name KSOWOVO            # clone 的 config 缺 [user] 段，必须补回
+  git -C "$SK" config user.email ksowovo@users.noreply.github.com
+  git -C "$SK" status --short                      # 此时显示真实差异，可正常精准 add / commit / push
+  ```
+  恢复用的是远程完整对象库，**本地未提交的工作区文件不受任何影响**，成果不会丢。
 
 
 ## ⚠️ 行尾污染：Contents API 上传会绕过 autocrlf（2026-09-02 踩坑）
