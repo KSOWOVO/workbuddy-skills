@@ -988,6 +988,8 @@ async function showSelTranslate(px, py, anchorNode){
   dp.style.display='block'; dp.style.left=left+'px'; dp.style.top=top+'px';
   dp.style.background='#1e293b'; dp.style.borderColor='#1e293b';
   const OFFLINE = (typeof navigator!=='undefined' && navigator.onLine===false);
+  function decodeEnt(x){ return String(x).replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&mdash;/g,'—').replace(/&ndash;/g,'–').replace(/&nbsp;/g,' ').replace(/&[a-z]+;/gi,' '); }
+  function clip450(x){ if(x.length<=450) return x; const c=x.slice(0,450); const k=Math.max(c.lastIndexOf('. '),c.lastIndexOf('! '),c.lastIndexOf('? ')); return k>120?c.slice(0,k+1):c; }
   const sel = selText;
   const lower = normWord(sel);
   const wordCount = sel.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).length;
@@ -996,7 +998,7 @@ async function showSelTranslate(px, py, anchorNode){
     dispW.textContent = 'Sentence / sentence';
     dispCn.textContent = '⏳ 翻译中…';
     dispDef.textContent = 'MyMemory 在线翻译（上下文意译）';
-    const tl = OFFLINE ? null : await onlineTranslate(sel);
+    const tl = OFFLINE ? null : await onlineTranslate(clip450(decodeEnt(sel)));
     if(tl){ dispCn.textContent = tl + ''; }
     else {
       const off = offlineSentence(anchorNode, sel);
@@ -1025,7 +1027,7 @@ async function showSelTranslate(px, py, anchorNode){
       const rx = new RegExp('('+sel.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','i');
       const hl = escH(ctx).replace(rx,'<b style="color:#7dd3fc">$1</b>');
       dispDef.innerHTML = '<span style="color:#fde68a">在句中含义请看整句语境↓</span><br>— 原文整句 —<br><span style="color:#cbd5e1">'+hl+'</span><br><span style="color:#fbbf24">⏳ 整句意译…</span>';
-      const tl = OFFLINE ? null : await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx);
+      const tl = OFFLINE ? null : await onlineTranslate(clip450(decodeEnt(ctx.length>200 ? ctx.slice(0,200) : ctx)));
       if(tl){
         dispDef.innerHTML = '<span style="color:#fde68a">【'+hits[0].w+'】'+hits[0].cn+'</span>（词典义）<br>— 整句意译（看它在此句的意思）—<br><span style="color:#cbd5e1">'+escH(tl)+'</span>';
         dispCn.textContent = tl;
@@ -1043,7 +1045,7 @@ async function showSelTranslate(px, py, anchorNode){
   dispDef.innerHTML = hasCtx
     ? '— 原文整句 —<br><span style="color:#cbd5e1">'+escH(ctx.length>180?ctx.slice(0,180):ctx)+'</span>'
     : '正在调用在线翻译…';
-  const wl = OFFLINE ? null : await onlineTranslate(sel);
+  const wl = OFFLINE ? null : await onlineTranslate(decodeEnt(sel));
   const tl = (!OFFLINE && hasCtx) ? await onlineTranslate(ctx.length>180 ? ctx.slice(0,180) : ctx) : null;
   if(tl){
     dispCn.textContent = '【'+sel+'】≈ ' + (wl || '（见下方整句译文中的表达）');
@@ -1144,85 +1146,141 @@ function toggleCn(btn,id){
   const showing = el.classList.contains('show');
   btn.textContent = showing ? '▲ 收起' : (btn.dataset.label || '▼ 中文');
 }
-/* ================= 句子级 hover 联动 v3：比例映射 + 数字锚点对齐 =================
-   修复 v2 的 i↔i 硬配对：英文句数 ≠ 中文句数时（翻译合并/拆句、缩写误切）高亮错位。
-   v3：① 英文切句后合并缩写碎片（U.S. / Inc. / Aug. 等不再切断）；
-       ② 英文句 i → 中文区间 [lo,hi]（比例映射，端点对齐，支持多对一/一对多）；
-       ③ 中文句 ≥ 英文句时，用数字指纹（2.71 / 90.49 等）在 ±1 窗口内修正区间中心；
-       ④ 区间全局预计算 + 单调不减约束；⑤ term 占位符保护 / mouseover 委托 / 自动展开中文（沿袭 v2）。 */
+/* ================= 句子级 hover 联动 v7：DOM 文本节点级包装（无占位符，根治乱码） =================
+   v7 变更：废弃 v6 的 \u0001T{n}\u0001 占位符方案——该控制字符经 innerHTML 序列化会变成 &#1; 文本，
+   页面可能显示乱码；改为 TreeWalker 遍历文本节点、按句边界就地包 <span class="en-s">，
+   <span class="term"> 等内联元素原样保留在句中，全程不经 innerHTML 重建。
+   对齐沿用 v3：比例映射 + 数字锚点 + 单调约束；区间写 data-clo/data-chi 供离线兜底。
+   另：包装时顺带清洗 C0 控制字符（防御性）。 */
 (function sentencePairing(){
-  const SPLIT_EN = /(?<=[.!?])\s+(?=[A-Z“"'0-9(])|\n+/g;
+  const SPLIT_EN = /(?<=[.!?])\s+(?=[A-Z"“'0-9(])/g;
   const SPLIT_CN = /(?<=[。！？；])\s*/g;
-  const esc = s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const ABBR = /(^|\s)([A-Za-z]{1,4}|etc|vs|inc|ltd|corp|mr|mrs|ms|dr|prof|st|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|approx|est|fig|no|vol|pp)\.$/i;
-  function splitEn(s){
-    const parts = s.split(SPLIT_EN).map(x=>x.trim()).filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x));
-    const out = [];
-    for(let i=0;i<parts.length;i++){
-      let cur = parts[i];
-      while(i+1<parts.length && ABBR.test(cur) && /^[a-z(]/.test(parts[i+1])){
-        cur = cur + ' ' + parts[i+1]; i++;
-      }
-      out.push(cur);
+  const CTRL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
+  function sentBounds(full){
+    const cuts = []; let m;
+    SPLIT_EN.lastIndex = 0;
+    while((m = SPLIT_EN.exec(full))) cuts.push(m.index + m[0].length);
+    const bounds = []; let cur = 0;
+    cuts.forEach(c => {
+      const before = full.slice(0, c).replace(/\s+$/, '');
+      if(ABBR.test(before)) return;
+      const seg = full.slice(cur, c).trim();
+      if(seg.length > 2) bounds.push([cur, c]);
+      else if(bounds.length) bounds[bounds.length-1][1] = c;
+      cur = c;
+    });
+    if(cur < full.length){
+      const seg = full.slice(cur).trim();
+      if(seg.length > 2) bounds.push([cur, full.length]);
+      else if(bounds.length) bounds[bounds.length-1][1] = full.length;
     }
-    return out.filter(x=>x.length>2 && /[a-zA-Z]{2,}/.test(x));
+    return bounds;
   }
-  function splitCn(s){ return s.split(SPLIT_CN).map(x=>x.trim()).filter(x=>x.length>1); }
-  function nums(t){ return new Set(String(t).match(/\d+(?:\.\d+)?/g)||[]); }
-  document.querySelectorAll('.news, .macro-block').forEach(box=>{
+  function cnSentBounds(full){
+    const parts = full.split(/(?<=[。！？；])\s*/);
+    const bounds = []; let cur = 0;
+    parts.forEach(function(p){
+      const len = p.length;
+      if(!len) return;
+      if(p.trim().length > 1) bounds.push([cur, cur + len]);
+      else if(bounds.length) bounds[bounds.length-1][1] = cur + len;
+      cur += len;
+    });
+    if(!bounds.length) bounds.push([0, full.length]);
+    return bounds;
+  }
+  function wrapEl(root, cls, isCn){
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    const tns = []; let nd;
+    while((nd = walker.nextNode())) tns.push(nd);
+    if(!tns.length) return [];
+    let full = ''; const pos = [];
+    tns.forEach(tn => { const st = full.length; full += tn.nodeValue.replace(CTRL, ''); pos.push([st, full.length, tn]); });
+    if(!full.trim()) return [];
+    const bs = isCn ? cnSentBounds(full) : sentBounds(full);
+    if(bs.length < 1) return [];
+    const segs = []; let cursor = 0;
+    bs.forEach((b, i) => {
+      if(b[0] > cursor) segs.push({s:cursor, e:b[0], i:null});
+      segs.push({s:b[0], e:b[1], i:i});
+      cursor = b[1];
+    });
+    if(cursor < full.length) segs.push({s:cursor, e:full.length, i:null});
+    const made = [];
+    pos.forEach(([ts, te, tn]) => {
+      const frag = document.createDocumentFragment();
+      let local = ts;
+      segs.forEach(sg => {
+        const s = Math.max(sg.s, ts), e = Math.min(sg.e, te);
+        if(e <= s) return;
+        if(s > local){ frag.appendChild(document.createTextNode(full.slice(local, s))); }
+        const txt = full.slice(s, e);
+        if(sg.i === null){ frag.appendChild(document.createTextNode(txt)); }
+        else {
+          const sp = document.createElement('span');
+          sp.className = cls;
+          sp.setAttribute('data-i', sg.i);
+          sp.textContent = txt;
+          frag.appendChild(sp);
+          made.push(sp);
+        }
+        local = Math.max(local, e);
+      });
+      if(local < te){ frag.appendChild(document.createTextNode(full.slice(local, te))); }
+      tn.parentNode.replaceChild(frag, tn);
+    });
+    return made;
+  }
+  function nums(t){ return new Set(String(t).match(/\d+(?:\.\d+)?/g) || []); }
+  document.querySelectorAll('.news, .macro-block').forEach(function(box){
     const enEl = box.querySelector(':scope > .p-en, :scope .p-en');
     const cnEl = box.querySelector(':scope .p-cn');
     if(!enEl || !cnEl || enEl.dataset.paired) return;
-    const tmap = [];
-    const enHtml = enEl.innerHTML.replace(/<span class="term">([\s\S]*?)<\/span>/g,(m,t)=>{ tmap.push(t); return '\u0001T'+(tmap.length-1)+'\u0001'; });
-    const enPieces = splitEn(enHtml);
-    if(enPieces.length < 1) return;
-    enEl.innerHTML = enPieces.map((s,i)=>'<span class="en-s" data-i="'+i+'">'+esc(s)+'</span>').join(' ');
-    if(tmap.length) enEl.innerHTML = enEl.innerHTML.replace(/\u0001T(\d+)\u0001/g,(m,i)=>'<span class="term">'+tmap[+i]+'</span>');
+    const enSpans = wrapEl(enEl, 'en-s', false);
+    if(!enSpans.length) return;
     enEl.dataset.paired = '1';
-    if(cnEl && !cnEl.querySelector('.cn-s')){
-      const cnS = splitCn(cnEl.textContent);
-      if(cnS.length > 1) cnEl.innerHTML = cnS.map((s,i)=>'<span class="cn-s" data-i="'+i+'">'+esc(s)+'</span>').join('');
-    }
-    const cnArr = cnEl ? Array.prototype.slice.call(cnEl.querySelectorAll('.cn-s')) : [];
-    const N = enPieces.length, M = cnArr.length;
-    const ranges = [];
-    (function precompute(){
-      let prevLo = 0;
-      for(let i=0;i<N;i++){
-        let lo = Math.min(M-1, Math.floor(i*M/N));
-        let hi = (M>=N) ? Math.min(M-1, Math.floor((i+1)*M/N)-1) : lo;
-        if(hi < lo) hi = lo;
-        if(M > N){
-          const enNums = nums(enPieces[i]);
-          if(enNums.size){
-            let best=-1, bestScore=0;
-            const from=Math.max(0,lo-1), to=Math.min(M-1,hi+1);
-            for(let j=from;j<=to;j++){
-              const cnNums = nums(cnArr[j].textContent);
-              let sc=0; enNums.forEach(n=>{ if(cnNums.has(n)) sc++; });
-              if(sc>bestScore){ bestScore=sc; best=j; }
-            }
-            if(bestScore>0){
-              const w=hi-lo;
-              lo=Math.max(0, Math.min(M-1-w, best-Math.floor(w/2)));
-              hi=lo+w;
-            }
+    if(!cnEl.querySelector('.cn-s')) wrapEl(cnEl, 'cn-s', true);
+    const enPieces = [];
+    enSpans.forEach(sp => { const i = +sp.getAttribute('data-i'); if(enPieces[i] === undefined) enPieces[i] = ''; enPieces[i] += sp.textContent; });
+    const cnSpans = Array.prototype.slice.call(cnEl.querySelectorAll('.cn-s'));
+    const cnText = []; cnSpans.forEach(cs => { const i = +cs.dataset.i; if(cnText[i] === undefined) cnText[i] = ''; cnText[i] += cs.textContent; });
+    const N = enPieces.length, M = cnText.length;
+    if(!N || !M) return;
+    const ranges = []; let prevLo = 0;
+    for(let i = 0; i < N; i++){
+      let lo = Math.min(M - 1, Math.floor(i * M / N));
+      let hi = (M >= N) ? Math.min(M - 1, Math.floor((i + 1) * M / N) - 1) : lo;
+      if(hi < lo) hi = lo;
+      if(M > N){
+        const en = nums(enPieces[i]);
+        if(en.size){
+          let best = -1, bestScore = 0;
+          const from = Math.max(0, lo - 1), to = Math.min(M - 1, hi + 1);
+          for(let j = from; j <= to; j++){
+            const cn = nums(cnText[j]); let sc = 0;
+            en.forEach(n => { if(cn.has(n)) sc++; });
+            if(sc > bestScore){ bestScore = sc; best = j; }
+          }
+          if(bestScore > 0){
+            const w = hi - lo;
+            lo = Math.max(0, Math.min(M - 1 - w, best - Math.floor(w / 2)));
+            hi = lo + w;
           }
         }
-        if(lo<prevLo) lo=prevLo;
-        if(hi<lo) hi=lo;
-        prevLo=lo;
-        ranges.push([lo,hi]);
       }
-    })();
-    enEl.querySelectorAll('.en-s').forEach(function(sp,i){ if(ranges[i]){ sp.dataset.clo=ranges[i][0]; sp.dataset.chi=ranges[i][1]; } });
+      if(lo < prevLo) lo = prevLo;
+      if(hi < lo) hi = lo;
+      prevLo = lo;
+      ranges.push([lo, hi]);
+    }
+    enSpans.forEach(sp => { const i = +sp.getAttribute('data-i'); if(ranges[i]){ sp.setAttribute('data-clo', ranges[i][0]); sp.setAttribute('data-chi', ranges[i][1]); } });
     let autoOpened = false;
-    function light(i,on){
-      const r = ranges[i]; if(!r || r[0]<0) return;
-      for(let j=r[0]; j<=r[1]; j++){
-        const cs = cnArr[j]; if(!cs) continue;
-        if(on) cs.classList.add('lit','hover-zoom'); else cs.classList.remove('lit','hover-zoom');
+    function light(idx, on){
+      const r = ranges[idx]; if(!r) return;
+      for(let j = r[0]; j <= r[1]; j++){
+        const cs = cnSpans[j]; if(!cs) continue;
+        if(on) cs.classList.add('lit', 'hover-zoom'); else cs.classList.remove('lit', 'hover-zoom');
       }
     }
     box.addEventListener('mouseover', function(ev){
@@ -1232,12 +1290,12 @@ function toggleCn(btn,id){
         autoOpened = true; cnEl.classList.add('show');
         const b = box.querySelector('.cn-toggle'); if(b) b.textContent = '▲ 收起';
       }
-      sp.classList.add('hovered'); light(+sp.dataset.i, true);
+      sp.classList.add('hovered'); light(+sp.getAttribute('data-i'), true);
     });
     box.addEventListener('mouseout', function(ev){
       const sp = ev.target && ev.target.closest ? ev.target.closest('.en-s') : null;
       if(!sp || !enEl.contains(sp)) return;
-      sp.classList.remove('hovered'); light(+sp.dataset.i, false);
+      sp.classList.remove('hovered'); light(+sp.getAttribute('data-i'), false);
     });
     box.addEventListener('mouseleave', function(){
       if(autoOpened && cnEl){
