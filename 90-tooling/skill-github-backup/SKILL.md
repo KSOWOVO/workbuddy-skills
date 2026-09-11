@@ -68,6 +68,5 @@ git push    # 502 就多试几次（网络间歇性）
 ```
 - push 慢/超时：用后台跑（run_in_background），完成后用 API 验证云端文件：
   `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/KSOWOVO/workbuddy-skills/contents/`
-- 🚨 **对 `~/.workbuddy/skills` 的 git 写操作必须加 `dangerouslyDisableSandbox: true`**（2026-09-11 实测）：默认沙箱下**新建**的 git 对象 / refs 会被静默丢弃——commit 看似成功、`git log` 也能读到，但 `.git/refs` 会整个消失 → `bad object HEAD`、仓库失联。只读操作不受影响。破损恢复姿势见 references/backup-details.md。
-- 命令若被 SIGTERM 打断，**不要假定 commit 有效**：先 `git log --oneline -1` + `git cat-file -t HEAD` 确认，异常则按上述恢复。
+- 网络慢时 push 可能 SIGTERM：重试即可，commit 已成功不受影响。
 - ⚠️ **其他窗口也共享此 git 仓库**：别的模型/窗口可能在更新 skill 后放回根目录路径，导致重复。同步前检查 `git ls-files | grep <skill名>` 是否有根目录与分类目录两份，有则 `git rm -f <根目录重复>` 清理后再同步（内容先合并到分类目录）。
