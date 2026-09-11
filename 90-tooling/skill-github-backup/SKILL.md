@@ -14,7 +14,7 @@ description: >
 ## 目标仓库
 - GitHub 账号：`KSOWOVO`
 - 仓库：`KSOWOVO/workbuddy-skills`（**public**）→ https://github.com/KSOWOVO/workbuddy-skills
-- 本地位置：`~/.workbuddy/skills`（已 git init，分支 `main`，remote = 带 token 的 https URL，无 credential.helper → 零弹窗）
+- 本地位置：`~/.workbuddy/skills`（已 git init，分支 `main`）。**认证现状（2026-09-08 更新）**：remote URL 已不含 token（被清理为裸 URL），改由 **Windows 凭据管理器（GCM）自动提供凭据**——git push/fetch 直接可用；**调 GitHub REST API 时用 `printf "protocol=https\nhost=github.com\n\n" | git credential fill | grep '^password=' | cut -d= -f2` 取 token**（40 位 ghp_），不要再从 remote URL 提取（会拿到 URL 本身 → 401）。
 - 仓库结构（按功能域分类，数字前缀保序）：
   ```
   01-browser-automation/   → browser-ocr
@@ -48,6 +48,9 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 > ① `env -u ...` 会**吞掉整个命令的 stdout**（连 `python -c "print('x')"` 都零输出、exit 0）——脚本看起来"什么都没做"其实是正常路径被静音；本 shell 通常没有代理环境变量（`env | grep -i proxy` 为空），**直接去掉 `env -u` 前缀即可**；
 > ② 脚本参数**不要用 `~` 开头的 POSIX 路径**——Windows python 会把它解析成 `c:\c\Users\...` 报 No such file；用显式全路径 `"C:/Users/13662/.workbuddy/skills/90-tooling/skill-github-backup/scripts/sync_to_github.py"`。
 脚本自动完成：扫敏感 → 精准 add+commit → git push（502 自动重试 5 次）→ 全部失败走 api.github.com 兜底 → 最终验证云端 HEAD=本地 HEAD。**用户看不到任何 502/待办/遗留项。**
+> 🔧 **2026-09-11 修的两个脚本 bug**（遇到"进程崩在 `r.stderr` 为 None"/"无法提取 token"先看这里）：
+> ① 本机 git 输出**不是 UTF-8**（含 GBK 字节），`text=True` 默认解码会在 reader 线程抛 `UnicodeDecodeError`，导致 `r.stdout/stderr` 变成 `None` → 下一行 `in r.stderr` 抛 `TypeError` 直接崩。**已给所有 `subprocess.run(text=True)` 加 `encoding="utf-8", errors="replace"`，并对 `r.stderr` 做 `or ""` 兜底。**
+> ② remote URL 已被清理为裸 URL，旧的"从 remote 正则提取 token"必然返回 None → API 兜底恒失效。**已改为：remote 提取失败时回退 `git credential fill`（`printf "protocol=https\nhost=github.com\n\n"`）解析 `password=`。**
 
 ### 手动流程（脚本不可用时）
 ```bash

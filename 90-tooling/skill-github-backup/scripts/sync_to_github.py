@@ -39,6 +39,7 @@ def git(args, timeout=45):
     env["GCM_INTERACTIVE"] = "never"
     try:
         r = subprocess.run(["git"] + args, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace",
                            env=env, cwd=SKILLS_DIR, timeout=timeout)
         return r
     except subprocess.TimeoutExpired:
@@ -46,12 +47,24 @@ def git(args, timeout=45):
 
 
 def get_token():
-    """从 remote URL 提取 x-access-token。"""
+    """优先从 remote URL 提取；remote 已清理为裸 URL 时，改问 Windows 凭据管理器（GCM）。"""
     r = git(["remote", "get-url", "origin"])
-    if r.returncode != 0:
-        return None
-    m = re.search(r"x-access-token:([^@]+)@", r.stdout)
-    return m.group(1) if m else None
+    if r.returncode == 0 and r.stdout:
+        m = re.search(r"x-access-token:([^@]+)@", r.stdout)
+        if m:
+            return m.group(1)
+    try:
+        r2 = subprocess.run(
+            ["git", "credential", "fill"],
+            input="protocol=https\nhost=github.com\n\n",
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=30, cwd=SKILLS_DIR)
+        m = re.search(r"^password=(.+)$", r2.stdout or "", re.M)
+        if m:
+            return m.group(1).strip()
+    except Exception:
+        pass
+    return None
 
 
 def scan_sensitive(rel):
@@ -86,7 +99,8 @@ def api_fallback(rel, token):
     """git push 多次失败后的 API 兜底：把本地 HEAD 中该 skill 的文件 PUT 到云端。"""
     print("⚠️ git push 多次失败，改用 api.github.com 兜底上传（仅覆盖该 skill 目录）...")
     ls = subprocess.run(["git", "-C", SKILLS_DIR, "ls-tree", "-r", "HEAD", rel],
-                        capture_output=True, text=True).stdout
+                        capture_output=True, text=True,
+                        encoding="utf-8", errors="replace").stdout
     if not ls.strip():
         print("❌ 本地 HEAD 找不到该路径，请确认相对路径")
         sys.exit(1)
@@ -137,8 +151,22 @@ def main():
     print("== 2/4 本地 commit ==")
     git(["add", rel])
     r = git(["commit", "-m", msg])
-    if r.returncode != 0 and "nothing to commit" not in r.stderr:
-        print("   commit 提示：", r.stderr.strip()[:200])
+    if r.returncode != 0:
+        tip = ((r.stderr or "") + "\n" + (r.stdout or "")).strip()
+        if "nothing to commit" in tip:
+            print("   无改动需要提交")
+        else:
+            last = tip.splitlines()[-1][:200] if tip.splitlines() else "?"
+            print("❌ commit 失败：", last)
+            print("   最常见原因：git 未配置 user.name / user.email（本仓曾出现）")
+            print('   修复：git -C "%s" config user.name KSOWOVO' % SKILLS_DIR)
+            print('         git -C "%s" config user.email ksowovo@users.noreply.github.com' % SKILLS_DIR)
+            sys.exit(1)
+    # 兜底：暂存区必须已清空，否则说明 commit 实际没落地
+    # （否则会拿「旧 HEAD == 远端旧 HEAD」误报「云端已对齐」）
+    if git(["diff", "--cached", "--quiet"]).returncode != 0:
+        print("❌ 暂存区仍有未提交改动，commit 未生效 → 中止，避免假「对齐」报告")
+        sys.exit(1)
     print("   本地 HEAD:", git(["log", "-1", "--oneline"]).stdout.strip())
 
     print("== 3/4 推送（自动重试，处理 502）==")
