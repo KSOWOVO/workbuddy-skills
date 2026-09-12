@@ -249,6 +249,7 @@ def imread_unicode(path):
 |---|---|---|
 | bash PATH 损坏 | `ls` / `grep` / `head` / `tail` 全 `command not found` | 一切改用绝对路径调 managed Python；列目录用 `os.listdir` |
 | 覆盖 docx | `PermissionError WinError 5`（杀软/索引占用） | `open(path,'r+b')` 就地写 + `truncate()`，别用 `os.replace` |
+| **漏写 truncate → docx 报废** | 就地写时**新文件比原文件短**，尾部残留旧字节 → 再次打开报 `zipfile.BadZipFile`（文档打不开） | **凡 `open(path,'r+b')` 覆盖写，必须紧跟 `f.truncate()`**；`d.save(f)` 直接写到 `r+b` 句柄同样要 `seek(0)` 后 `truncate()`。执行前**先 copy 一份 `_bak_before_fixN.docx`**，坏了好回滚 |
 | 代理阻断下载 | sci-hub 502 / AIS / ResearchGate / JSTOR 拦截 | 如实标注"未获全文"，不编造引语；让用户决定保留或降级 |
 | 统计文件写作 | 写 `.md` 时中文引号可能被转为直引号 | 落 docx 前检查引号；必要时后置转换脚本 |
 
