@@ -38,6 +38,22 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 先读 SKILL.md 正文 → 只有正文里明确指向 `references/` 的细节才去读。
 **禁止**一口气把 references 全读进来。脚本（scripts/）直接执行，不要读源码。
 
+## 复合任务：skill 要**串成管道**，不是单点调用
+
+单个 skill 只解决单点问题。真实需求往往是复合的，**前一个 skill 的产出就是后一个的输入**。
+已固化的 6 条管道（定义 + 交接物 + 坑）见 **`references/combos.md`**：
+
+| 链 | 场景 | 串联 |
+|---|---|---|
+| **C1 论文生产** | 写论文/改论文/定稿 | 知网下载 → 精读 → `survey-to-journal-paper` → `docx-paper-audit-revision` |
+| **C2 问卷数据** | 信度/α/数据真伪 | `pilot-survey-clean` → `survey-forensic-reliability` → `data-fabrication-audit` → 成文 |
+| **C3 知识库** | 转写稿加工/入库 | `learning-workbench-sync` → `ima-knowledge-upload` → `obsidian-vault-digest` |
+| **C4 跨会话** | 切模型/交接（横切） | `context-continuity-handoff` + 工作区 memory + conversation_search |
+| **C5 skill 运维** | 选/建/备份 skill | `skill-router` → 执行 → ①INDEX ②weights.json → `skill-github-backup` |
+| **C6 浏览器取证** | 抓取/下载/OCR | `browser-ocr` / `cnki-institutional-download` |
+
+**串接三条铁律**：①交接物**落文件**（链越长越要落盘，否则上下文一压缩就断链）②核验必须**换眼睛**（同一执行者不能既做又验）③只读可并行、**改同一批文件必须串行**。
+
 ## 场景路由表
 
 | 需求场景 | 优先 skill | 备注 |
@@ -82,4 +98,10 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 ## 全局索引
 
 完整清单见 `C:/Users/13662/.workbuddy/skills/INDEX.md`（skill 名 / 一句话 / 触发词 / 体积 / 是否自创）。
-新增或改动 skill 后**必须**同步更新该索引，否则路由会失准。
+
+**新增或改动 skill 后必须同步更新两处，缺一个路由就失准**：
+1. `INDEX.md` —— 清单表（一句话 + 触发词 + 体积）
+2. **`weights.json` —— 加一个能力域**（triggers + 该 skill 权重 1.8）
+
+⚠️ 只改 INDEX.md 是不够的：打分器只认 `weights.json` 里的域，漏加 = 这个 skill **永远命中不到**，等于白做。
+（2026-09-12 实测：19 个自创 skill 曾有 12 个完全没进权重表。）改完**必须实测几条真实查询**验证命中，分数应远超阈值 3.0。
