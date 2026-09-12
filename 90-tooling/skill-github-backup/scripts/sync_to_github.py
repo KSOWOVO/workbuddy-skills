@@ -21,6 +21,7 @@ import base64
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -32,18 +33,65 @@ REPO = "KSOWOVO/workbuddy-skills"
 RETRY_INTERVALS = [0, 5, 10, 20, 40]  # git push 重试间隔（秒）
 
 
-def git(args, timeout=45):
-    """在 skills 目录执行 git 命令，非交互、禁 GUI 弹窗。"""
+def _resolve_git():
+    """本机 bash PATH 常缺 git（PortableGit 不在 PATH）→ 显式探测绝对路径。
+
+    优先级：环境变量 WB_GIT → shutil.which("git") → PortableGit 常见位置。
+    """
+    env_git = os.environ.get("WB_GIT")
+    if env_git and os.path.isfile(env_git):
+        return env_git
+    found = shutil.which("git")
+    if found:
+        return found
+    home = os.path.expanduser("~")
+    candidates = [
+        os.path.join(home, ".workbuddy", "binaries", "PortableGit",
+                     "versions", "1.2.0", "cmd", "git.exe"),
+        os.path.join(home, ".workbuddy", "binaries", "PortableGit",
+                     "versions", "1.2.0", "mingw64", "bin", "git.exe"),
+        r"C:\Program Files\Git\cmd\git.exe",
+        r"C:\Program Files (x86)\Git\cmd\git.exe",
+    ]
+    # 兜底：扫 PortableGit/versions/*/cmd/git.exe
+    pg = os.path.join(home, ".workbuddy", "binaries", "PortableGit", "versions")
+    if os.path.isdir(pg):
+        for v in sorted(os.listdir(pg), reverse=True):
+            candidates.append(os.path.join(pg, v, "cmd", "git.exe"))
+    for c in candidates:
+        if os.path.isfile(c):
+            return c
+    return "git"  # 最后交给系统，失败时由调用方报错
+
+
+GIT = _resolve_git()
+
+
+def _git_env():
+    """git 子进程环境：把 git 所在目录塞进 PATH，禁交互弹窗。"""
     env = dict(os.environ)
     env["GIT_TERMINAL_PROMPT"] = "0"
     env["GCM_INTERACTIVE"] = "never"
+    git_dir = os.path.dirname(GIT)
+    if git_dir and os.path.isdir(git_dir):
+        env["PATH"] = git_dir + os.pathsep + env.get("PATH", "")
+    return env
+
+
+def git(args, timeout=45):
+    """在 skills 目录执行 git 命令，非交互、禁 GUI 弹窗。"""
+    env = _git_env()
     try:
-        r = subprocess.run(["git"] + args, capture_output=True, text=True,
+        r = subprocess.run([GIT] + args, capture_output=True, text=True,
                            encoding="utf-8", errors="replace",
                            env=env, cwd=SKILLS_DIR, timeout=timeout)
         return r
     except subprocess.TimeoutExpired:
         return subprocess.CompletedProcess(args, 124, "", "timeout")
+    except FileNotFoundError:
+        print("❌ 找不到 git 可执行文件（已探测 %s）。" % GIT)
+        print("   可设环境变量 WB_GIT 指向 git.exe 绝对路径后重试。")
+        sys.exit(1)
 
 
 def get_token():
@@ -55,10 +103,10 @@ def get_token():
             return m.group(1)
     try:
         r2 = subprocess.run(
-            ["git", "credential", "fill"],
+            [GIT, "credential", "fill"],
             input="protocol=https\nhost=github.com\n\n",
             capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=30, cwd=SKILLS_DIR)
+            env=_git_env(), timeout=30, cwd=SKILLS_DIR)
         m = re.search(r"^password=(.+)$", r2.stdout or "", re.M)
         if m:
             return m.group(1).strip()
@@ -98,8 +146,9 @@ def api(url, data=None, method=None, token=None):
 def api_fallback(rel, token):
     """git push 多次失败后的 API 兜底：把本地 HEAD 中该 skill 的文件 PUT 到云端。"""
     print("⚠️ git push 多次失败，改用 api.github.com 兜底上传（仅覆盖该 skill 目录）...")
-    ls = subprocess.run(["git", "-C", SKILLS_DIR, "ls-tree", "-r", "HEAD", rel],
+    ls = subprocess.run([GIT, "-C", SKILLS_DIR, "ls-tree", "-r", "HEAD", rel],
                         capture_output=True, text=True,
+                        env=_git_env(),
                         encoding="utf-8", errors="replace").stdout
     if not ls.strip():
         print("❌ 本地 HEAD 找不到该路径，请确认相对路径")
@@ -107,8 +156,8 @@ def api_fallback(rel, token):
     for line in ls.splitlines():
         meta, path = line.split("\t", 1)
         blob_sha = meta.split()[2]
-        blob = subprocess.run(["git", "-C", SKILLS_DIR, "cat-file", "blob", "HEAD:" + path],
-                              capture_output=True).stdout
+        blob = subprocess.run([GIT, "-C", SKILLS_DIR, "cat-file", "blob", "HEAD:" + path],
+                              capture_output=True, env=_git_env()).stdout
         b64 = base64.b64encode(blob).decode("ascii")
         url = "https://api.github.com/repos/%s/contents/%s" % (
             REPO, urllib.parse.quote(path, safe="/"))
@@ -150,6 +199,9 @@ def main():
 
     print("== 2/4 本地 commit ==")
     git(["add", rel])
+    # INDEX.md 是全局索引，动过 skill 就必然要一起同步，避免只提交目录留下半截状态
+    if os.path.isfile(os.path.join(SKILLS_DIR, "INDEX.md")):
+        git(["add", "INDEX.md"])
     r = git(["commit", "-m", msg])
     if r.returncode != 0:
         tip = ((r.stderr or "") + "\n" + (r.stdout or "")).strip()
