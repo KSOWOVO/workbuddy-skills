@@ -124,6 +124,55 @@ for i in range(min(len(orig.paragraphs), len(new.paragraphs))):
 
 ---
 
+## 1b. 走 MCP 本地编辑器通道（editor_sdk）保存 docx 的副作用（实测）
+
+用 `tencent-local-office-edit` 的 `doc_find_and_replace` + `save_file` 改 docx（用户在编辑器里能实时看到改动，这是它相对 python-docx 的唯一优势），**保存时编辑器会重写整个包**：
+
+| 副作用 | 实测 | 影响 |
+|---|---|---|
+| **run 被重新切分** | 单 run 段 → 多 run 段（如 1→4） | 每 run 的 `(size, bold, name, italic, underline)` 不变 → **视觉无差** |
+| **兼容性 part 被删** | `customXml/*`(3)、`docProps/thumbnail.jpeg`、`word/stylesWithEffects.xml`、`word/webSettings.xml`（18→12 parts） | 不影响正文与排版；仅丢缩略图与旧版兼容副本 |
+| **图片重新编码** | image1.png 79559B → 265413B | **像素完全相同**，只是未压缩（PNG 变大） |
+| **numbering.xml 瘦身** | 5513B → 3049B（删未用定义） | 实测 `numPr=0`，无影响 |
+
+**所以"改完必须全套比对"，光比文本 + 格式签名集合不够**：
+
+```python
+# ① 字符级格式分布（抓"切分错误 / 局部格式丢失"）
+def fmtmap(p):
+    m={}
+    for r in p.runs:
+        k=(r.font.size.pt if r.font.size else None, bool(r.font.bold), r.font.name,
+           bool(r.font.italic), r.font.underline)
+        m[k]=m.get(k,0)+len(r.text)
+    return m
+bad=[i for i in range(min(len(po),len(pn))) if po[i].text==pn[i].text and fmtmap(po[i])!=fmtmap(pn[i])]
+
+# ② 段落级属性
+def pattr(p):
+    pf=p.paragraph_format
+    return (p.style.name if p.style else None, str(pf.alignment), pf.first_line_indent,
+            pf.left_indent, pf.line_spacing, pf.space_before, pf.space_after)
+bad2=[i for i in range(min(len(po),len(pn))) if pattr(po[i])!=pattr(pn[i])]
+
+# ③ 图片：必须解像素比，md5 变了不代表内容变了！
+from PIL import Image; import io
+same = Image.open(io.BytesIO(b1)).tobytes()==Image.open(io.BytesIO(b2)).tobytes()
+# 并比 wp:extent cx/cy 是否被改（防拉伸）
+
+# ④ 结构元素计数
+import re,zipfile
+x=zipfile.ZipFile(DOC).read('word/document.xml').decode('utf-8')
+for pat in ['w:numPr','<w:sectPr','<w:tbl>','<w:drawing>']:
+    print(pat, len(re.findall(pat.replace('w:','<w:') if not pat.startswith('<') else pat, x)))
+```
+
+**四项全过 = 零视觉损失。**
+
+**选路建议**：纯文本替换若能用 python-docx 做，**优先 python-docx**（包结构最干净，不动 run 切分、不删 part）；只有需要"用户在编辑器里实时看到改动"时才走 MCP 通道，且**改完务必跑上面四项比对**。
+
+---
+
 ## 2. 替换 docx 内嵌图片（换外部 PNG 没用！）
 
 `docx` 是 zip。图存在 **`word/media/imageX.png`**，正文通过
