@@ -76,6 +76,25 @@ el = copy.deepcopy(r0._r); r0._r.addnext(el)
 nr = Run(el, p); nr.text = full[k:]; nr.font.bold = False
 ```
 
+**⚠️ 还原后会"假成功"，必须复核每个 run 的 (text, bold, len)**（实测踩坑）：
+我曾用 `deepcopy(r0._r)+addnext` 造出 2 个 run，脚本自报成功，实际上**切分点算错**——
+794 字仍全在 run0 且 `bold=True`、run1 为空，摘要**依旧整段加粗**。
+所以还原后**必须打印**核对：
+
+```python
+print([(r.text[:8], bool(r.font.bold), len(r.text)) for r in p.runs])
+# 期望：('摘  要：', True, 5), ('在国家文化...', False, 789)
+```
+
+**更稳的做法：段里 run 本已存在时，只改 `.text`，不要新建/删除 run** ——
+既存 run 的 rPr 天然正确，改文本不会动格式：
+
+```python
+label = runs[0].text          # 从原点版取准确前缀，别手写
+runs[0].text = label          # 标签 run（加粗）
+runs[1].text = full[len(label):]   # 正文 run（不加粗）
+```
+
 ### 收尾必做的"格式签名"全量比对
 
 改完不要只看文字 diff —— **逐段比 run 格式签名**，才能抓出被吃掉的局部格式：
@@ -85,6 +104,22 @@ def sig(p): return set((r.font.size.pt if r.font.size else None, bool(r.font.bol
 bad = [i for i in range(min(len(orig.paragraphs), len(new.paragraphs)))
        if sig(orig.paragraphs[i]) != sig(new.paragraphs[i])]
 print('格式变化段:', bad)   # 只有"原空段填入新内容"一类才是正常的
+```
+
+**⚠️ 光比"格式签名集合"会漏掉"run 内部切分错误"**（实测踩坑）：
+摘要段坏掉时是 `run0=整段(粗) + run1=空(非粗)`，与正常的 `run0=标签(粗) + run1=正文(非粗)`
+**签名集合完全相同** `{(12pt,True,X),(12pt,False,X)}` → 集合比对查不出来。
+必须**同时比 run 数 + 每个 run 的文本长度**：
+
+```python
+for i in range(min(len(orig.paragraphs), len(new.paragraphs))):
+    ro, rn = orig.paragraphs[i].runs, new.paragraphs[i].runs
+    if len(ro) != len(rn):                                   # ① run 数
+        print('run数变', i, len(ro), '->', len(rn))
+    elif [len(r.text) for r in ro] != [len(r.text) for r in rn]:  # ② 各 run 长度
+        print('run切分变', i,
+              [(r.text[:6], bool(r.font.bold), len(r.text)) for r in ro], '->',
+              [(r.text[:6], bool(r.font.bold), len(r.text)) for r in rn])
 ```
 
 ---
