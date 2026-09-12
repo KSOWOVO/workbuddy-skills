@@ -40,19 +40,13 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 
 ## 复合任务：skill 要**串成管道**，不是单点调用
 
-单个 skill 只解决单点问题。真实需求往往是复合的，**前一个 skill 的产出就是后一个的输入**。
-已固化的 6 条管道（定义 + 交接物 + 坑）见 **`references/combos.md`**：
+真实需求往往是复合的，**前一个 skill 的产出就是后一个的输入**。
+6 条已固化管道的完整定义（串联顺序 / 交接物 / 坑）见 **`references/combos.md`**：
 
-| 链 | 场景 | 串联 |
-|---|---|---|
-| **C1 论文生产** | 写论文/改论文/定稿 | 知网下载 → 精读 → `survey-to-journal-paper` → `docx-paper-audit-revision` |
-| **C2 问卷数据** | 信度/α/数据真伪 | `pilot-survey-clean` → `survey-forensic-reliability` → `data-fabrication-audit` → 成文 |
-| **C3 知识库** | 转写稿加工/入库 | `learning-workbench-sync` → `ima-knowledge-upload` → `obsidian-vault-digest` |
-| **C4 跨会话** | 切模型/交接（横切） | `context-continuity-handoff` + 工作区 memory + conversation_search |
-| **C5 skill 运维** | 选/建/备份 skill | `skill-router` → 执行 → ①INDEX ②weights.json → `skill-github-backup` |
-| **C6 浏览器取证** | 抓取/下载/OCR | `browser-ocr` / `cnki-institutional-download` |
+**C1 论文生产**（知网下载→精读→成文→定稿审计）、**C2 问卷数据**（清洗→提信度→体检→成文）、
+**C3 知识库**（加工→入库→可视化）、**C4 跨会话**（HANDOFF+memory）、**C5 skill 运维**（选→建→同步）、**C6 浏览器取证**。
 
-**串接三条铁律**：①交接物**落文件**（链越长越要落盘，否则上下文一压缩就断链）②核验必须**换眼睛**（同一执行者不能既做又验）③只读可并行、**改同一批文件必须串行**。
+**串接三条铁律**：①交接物**落文件**（链越长越要落盘，否则上下文一压缩就断链）②核验必须**换眼睛**③只读可并行、**改同一批文件必须串行**。
 
 ## 场景路由表
 
@@ -67,22 +61,15 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 
 ### 同类 skill 撞车：交给权重仲裁，不要靠硬编码优先级
 
-多个 skill 都能沾边时（如 5 个金融 skill），打分器用权重模型选出对的那个：
+多个 skill 都能沾边时（如 5 个金融 skill），打分器用权重模型选对的那个：
 
     final = (关键词分 × 域专长乘子 + 域命中加分) × 自创加成 − 体积惩罚
 
-- **域专长乘子**：`weights.json` 定义每个 skill 在各能力域的擅长程度。
-  例如行情域 `market-query=1.8`、`news-search=0.2`，直接把不擅长的压下去。
-- **域命中加分**：query 每命中一个域触发词就给专长 skill 加分，保证"域判对了就能选对"。
-  纯乘子在关键词分低时救不回来，这一项解决了"营收/净利润"这类冷僻词误判为无匹配的问题。
-- **自创加成** ×1.15：更贴合用户习惯。
-- **体积惩罚**：每 KB 扣 0.06 分，抑制动辄 17KB 的重型 skill —— 这是省 token 的关键一环。
+- **域专长乘子**：`weights.json` 定义每个 skill 在各能力域的擅长程度（如行情域 `market-query=1.8`）。
+- **域命中加分**：命中域触发词就给专长 skill 加分，解决"营收/净利润"这类冷僻词误判为无匹配。
+- **自创加成** ×1.15；**体积惩罚**每 KB −0.06，抑制动辄 17KB 的重型 skill（省 token 关键一环）。
 
-**调路由只改 `weights.json`，不用动脚本。** 实测 4 类金融需求各自选对：
-行情→`market-query`、财报→`westock-data`、新闻→`news-search`、自然语言→`neodata-financial-search`。
-
-静态兜底（权重配置失效时）：行情→`market-query`；财报/股东/产业链→`westock-data`；
-新闻→`news-search`；自然语言/研报→`neodata-financial-search`；iFinD 专项→`ifind-finance-data`。
+**调路由只改 `weights.json`，不动脚本。** 实测各类需求各自选对：行情→`market-query`、财报→`westock-data`、新闻→`news-search`、自然语言→`neodata-financial-search`、改论文→`docx-paper-audit-revision`、知网下载→`cnki-institutional-download`。
 行情类**不要**用 WebSearch 替代（数据不准）。
 
 ## 什么时候才建新 skill
