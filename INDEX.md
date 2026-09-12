@@ -31,6 +31,7 @@
 | `04-content-generation/docx-paper-audit-revision` | **已有论文 DOCX 的定稿审计与批改**：数据复算 / 引用链体检（幻影·孤儿·伪造题录·用法错误）/ AI 味量化改写 / 内嵌图替换 | 改论文、论文定稿、核一下论文、引用有没有问题、AI 味、去 AI 腔、参考文献核验、幻影引用、孤儿文献、论文体检、图换掉 | 4.7K | **四项审计**；references/docx-surgery.md（跨 run 替换 / 包内 media blob 替换 + cy 比例 / 中文路径读图 / WinError5 就地写）；**AI 味判据 = 本文有 + 母版 0 次**；与 survey-to-journal-paper 是上下游 |
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
+| `90-tooling/context-continuity-handoff` | **跨模型/跨会话不丢信息**：项目根 HANDOFF.md 全量状态书（9 节）+ 工作区记忆锚点 + 追加式变更日志 | 切模型、换模型、压缩上下文、上下文丢了、别丢信息、全部保留、交接、接手、继续上次的任务、HANDOFF、跨会话 | 3.6K | 核心：**状态落到文件而不是对话**；HANDOFF 是全量不是摘要；追加式不删改；反模式与开场 checklist |
 | `05-system-utils/windows-app-official-download` | 取 Windows 软件官方正版包（含地区限制绕过）+ 签名/Defender 双校验 | 下载 Windows/电脑/PC 版、地区问题下不了、商店区域限制、官方无毒包、第三方站不放心、有没有原生 Win 版 | 4.6K | **只下载不代装、不改系统设置**；references/store-forensics.md（判读 `installer.type`）+ verify-playbook.md（Defender ExitCode 2 是权限失败非检出） |
 | `90-tooling/skland-endfield-toolkit` | 终末地 MaaEnd 每日自动化 + 森空岛官方 API（签到/账号面板/协议空间精调） | MaaEnd、终末地自动化、每日任务、森空岛签到、协议空间、账号面板、skland token、preaction | 2.7K | 生产已部署于 `~\.workbuddy\skland_tools\`（含 README 与修复入口）；references/skland-api.md（端点链+签名算法+数据结构） |
 
