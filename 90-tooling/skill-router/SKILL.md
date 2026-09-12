@@ -40,13 +40,19 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 
 ## 复合任务：skill 要**串成管道**，不是单点调用
 
-真实需求往往是复合的，**前一个 skill 的产出就是后一个的输入**。
-6 条已固化管道的完整定义（串联顺序 / 交接物 / 坑）见 **`references/combos.md`**：
+单个 skill 只解决单点问题。真实需求往往是复合的，**前一个 skill 的产出就是后一个的输入**。
+6 条已固化管道（完整定义 / 交接物 / 坑详见 **`references/combos.md`**）：
 
-**C1 论文生产**（知网下载→精读→成文→定稿审计）、**C2 问卷数据**（清洗→提信度→体检→成文）、
-**C3 知识库**（加工→入库→可视化）、**C4 跨会话**（HANDOFF+memory）、**C5 skill 运维**（选→建→同步）、**C6 浏览器取证**。
+| 链 | 触发场景 | 串联顺序 |
+|---|---|---|
+| **C1 论文生产** | 写论文/改论文/定稿/投稿 | `cnki-institutional-download` 取文献 → 精读 → `survey-to-journal-paper` 成文 → `docx-paper-audit-revision` 定稿审计 |
+| **C2 问卷数据** | 信度/α/数据真伪/正大杯 | `pilot-survey-clean` 清洗 → `survey-forensic-reliability` 提信度 → `data-fabrication-audit` 体检 → 成文 |
+| **C3 知识库** | 转写稿加工/入库/可视化 | `learning-workbench-sync` 加工 → `ima-knowledge-upload` 入库 → `obsidian-vault-digest` 出全景页 |
+| **C4 跨会话** | 切模型/交接（横切） | `context-continuity-handoff` + 工作区 memory + `conversation_search` |
+| **C5 skill 运维** | 选/建/备份 skill | `skill-router` 选 → 执行 → ①INDEX ②weights.json → `skill-github-backup` |
+| **C6 浏览器取证** | 抓取/下载/OCR | `browser-ocr` / `cnki-institutional-download`（特化） |
 
-**串接三条铁律**：①交接物**落文件**（链越长越要落盘，否则上下文一压缩就断链）②核验必须**换眼睛**③只读可并行、**改同一批文件必须串行**。
+**串接三条铁律**：①交接物**落文件**（链越长越要落盘，否则上下文一压缩就断链）②核验必须**换眼睛**（同一执行者不能既做又验）③只读可并行、**改同一批文件必须串行**。
 
 ## 场景路由表
 

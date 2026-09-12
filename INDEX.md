@@ -4,14 +4,18 @@
 > `python 90-tooling/skill-router/scripts/skill_match.py "<需求>" --top 3`
 > 新增/修改 skill 后**必须**更新本文件。
 
-## 体积预算（违反即需重构）
+## 体积预算
 
 | 层级 | 预算 | 说明 |
 |---|---|---|
-| `description` | ≤ 400 字 | **常驻上下文**，每次会话都要付 token，最贵 |
-| `SKILL.md` 正文 | ≤ 5 KB | 命中时才加载 |
+| `description` | **≤ 400 字（硬约束）** | **常驻上下文**，每次会话都要付 token，最贵 —— 只有这条必须死守 |
+| `SKILL.md` 正文 | **≤ 12 KB（软约束，好用就加）** | **命中时才加载**，只在用到那一刻付一次。别为省这点而牺牲信息量 |
 | `references/` | 不限 | 按需 Read，禁止一次性全读 |
 | `scripts/` | 不限 | 直接执行，不读源码 |
+
+> **别把正文当省 token 的对象**——真正贵的是 description。正文只要"结构清晰、不灌水"就行，
+> 实测 7~8KB 的 skill（如 data-fabrication-audit、skill-github-backup）完全正常。
+> 只有当某一节内容**只对特定子场景有用**时才拆去 references（目的是"按需读"而不是"省体积"）。
 
 ## 自创 skill（`agent_created: true`，需同步 GitHub）
 
