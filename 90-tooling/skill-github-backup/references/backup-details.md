@@ -12,8 +12,43 @@
 
 用户若在浏览器里看到 404，那是**本机网络环境问题，不是仓库问题**——建议换网络（手机热点）/用手机看，或让他打开 API 链接验证：`https://api.github.com/repos/KSOWOVO/workbuddy-skills`。
 
+## 🧭 第 0 步：推送失败先「探测哪个代理端口能通」（2026-09-12 实测，强烈建议先做）
+
+**本机代理端口会漂移**（实测见过 `4718` → `1667` → `2170` → `7897`），`HTTPS_PROXY` 环境变量里的端口**经常是死的**。
+表现：`CONNECT tunnel failed, response 502`（代理在但上游不通）或 `Recv failure: Connection was reset`（直连被墙）。
+**先花 10 秒探一遍，再决定用哪个端口 / 是否改走 API。**
+
+```python
+import socket, urllib.request
+PORTS=[4718,1667,2170,7897,7890,10809,1080,8080,8888]
+alive=[p for p in PORTS if (lambda s: (s.settimeout(0.35), __import__('contextlib').suppress(Exception).__enter__() or s.connect(('127.0.0.1',p)) or True))(socket.socket()) ]  # 粗暴版见下
+# 更清晰版：
+alive=[]
+for p in PORTS:
+    s=socket.socket(); s.settimeout(0.35)
+    try: s.connect(('127.0.0.1',p)); alive.append(p)
+    except Exception: pass
+    finally: s.close()
+for p in alive:                      # 端口开着不代表能通 github，还要做 CONNECT 测试
+    op=urllib.request.build_opener(urllib.request.ProxyHandler({'https':f'http://127.0.0.1:{p}'}))
+    try:
+        op.open(urllib.request.Request('https://github.com', headers={'User-Agent':'git/2.55'}), timeout=12)
+        print('可用代理:', p)
+    except Exception as e: print(p, '不通:', str(e)[:60])
+```
+
+**拿到可用端口后推送**（别去改系统环境变量，只在该次 subprocess 的 env 里覆盖）：
+```python
+env=dict(os.environ); env['HTTPS_PROXY']=env['HTTP_PROXY']='http://127.0.0.1:<可用端口>'
+subprocess.run([GIT,'-C',SKILLS,'push','origin','main'], env=env, ...)
+```
+> 实测：2026-09-12 环境变量指向 `2170`（502），实际可用的是 **`7897`**；换成 7897 后 `git push` 一次成功。
+> **不要为了推送去禁代理**（`ProxyHandler({})`）——本机直连 github 是超时/被重置的，禁代理只会换一种报错。
+
+---
+
 ## 备用通道：git push 报 502 时改用 API 直连（已验证可用）
-现象：本机代理 `127.0.0.1:4718` 对 `github.com:443` **时好时坏**，git push 会偶发失败：
+现象：本机代理（端口见上一节）对 `github.com:443` **时好时坏**，git push 会偶发失败：
 `fatal: unable to access 'https://github.com/...': CONNECT tunnel failed, response 502`
 （此时 `api.github.com` 往往仍是 200，可走 API 绕过。）
 
