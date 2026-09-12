@@ -18,6 +18,7 @@
 | Skill | 一句话 | 关键触发词 | 正文 | 备注 |
 |---|---|---|---|---|
 | `03-data-analysis/pilot-survey-clean` | 问卷/量表数据清洗 + 信效度 + 可视化 | α 信度、KMO、EFA、CITC、SEM、预调查、清洗、直线作答、Likert、题项分析 | 3.9K | 正大杯/佛山IP论文同流程 |
+| `03-data-analysis/data-fabrication-audit` | 核验一份数据（问卷/实验/统计表）**是否伪造/篡改/非真人填写**（只读不改） | 数据造假、数据真实性、是不是真人填的、数据指纹、数据有没有问题、校验这份数据、数据清洗痕迹、AI 生成的数据 | 7.1K | 支持 Excel/CSV；**只读不改**；与 survey-forensic-reliability 分工：本 skill 是"体检"，那个是"治疗" |
 | `03-data-analysis/qdii-quota-check` | 查 QDII/跨境基金当日申购状态与单日上限，按"每天 N 元"筛选能买哪只 | QDII 限购、暂停申购、买不进去、还有哪里能买、单日限额、标普500/纳指/恒生科技 定投额度、跨境额度 | 2.6K | 含 `scripts/quota.py`（跑时加 `PYTHONIOENCODING=utf-8`）；已固化三大坑：节假日误判/额度动态收紧/份额分开算 |
 | `03-data-analysis/survey-forensic-reliability` | **提升 α 同时让数据通过取证检验**（不像机器刷的）：20 项体检 + 指纹健康分 + 找 PA 悬崖点取最小改动 | 信度太低、α 不达标、数据指纹、像机器刷的、数据造假检测、反取证、平行分析、CITC 参差、离群者 | 3.9K | 含 `scripts/forensic_suite.py`、`scripts/evaluate_tiers.py`；**核心：改动量是健康度唯一主导因素**；保护名单+弱题项配额+禁重复改格 |
 | `02-knowledge-management/ima-knowledge-upload` | 本地文件写进 ima 知识库 / 读 ima | 存进 ima、入库、同步到 ima、知识库搜索 | 4.5K | 含 `scripts/cos_upload.py`（禁代理） |
@@ -29,7 +30,7 @@
 | `04-content-generation/exam-wordbank-workspace` | 备考工作台**内置大词库**合成（KyleBing 词表 + ECDict + ipa-dict → 数千词带音标/词性/释义/搭配）+ 单文件 HTML + 资料库分片双向同步 | 背词台、备考台、单词工作台、内置词库、艾宾浩斯、四级/六级/考研/雅思词汇表、词表要带音标、塞 3500 个词 | 3.6K | 含 `scripts/build_words.py`（--kb-file/--target 可调）+ `references/library-sync.md`（page 上传 + database 分片同步 SDK 契约）|
 | `04-content-generation/svg-to-animated-gif` | 矢量插画 → **无缝循环 GIF**（无头 Edge 一次截「N 帧网格」+ 整数周期法） | 做成 GIF、生成动图、让插画动起来、animate this SVG、循环动画、动图帧 | 2.4K | 含 `scripts/grid_to_gif.py`（改 CONFIG + `frame(t)` 即可复用）+ `references/loop_math.md`（无缝循环周期对齐）；**别装 cairosvg/playwright，用现成 Edge** |
 | `04-content-generation/survey-to-journal-paper` | 问卷统计结果 + 文风底座 + 期刊模板 → **中文核心期刊格式实证论文 DOCX**（三线表/模型图/中英摘要） | 写论文、把数据写成论文、实证论文、期刊格式、三线表、SEM 论文、按这个模板写、文风仿写、投稿初稿 | 3.2K | 三件套输入；含 `scripts/docx_kit.py`（字体/三线表/引号修复）+ `references/docx-cn-typesetting.md`（**中文引号被转直引号、禁对 py 源码做引号替换**） |
-| `04-content-generation/docx-paper-audit-revision` | **已有论文 DOCX 的定稿审计与批改**：数据复算 / 引用链体检（幻影·孤儿·伪造题录·用法错误）/ AI 味量化改写 / 内嵌图替换 | 改论文、论文定稿、核一下论文、引用有没有问题、AI 味、去 AI 腔、参考文献核验、幻影引用、孤儿文献、论文体检、图换掉 | 4.7K | **四项审计**；references/docx-surgery.md（跨 run 替换 / 包内 media blob 替换 + cy 比例 / 中文路径读图 / WinError5 就地写）；**AI 味判据 = 本文有 + 母版 0 次**；与 survey-to-journal-paper 是上下游 |
+| `04-content-generation/docx-paper-audit-revision` | **已有论文 DOCX 的定稿审计与批改**：数据复算 / 引用链体检（幻影·孤儿·伪造题录·用法错误）/ AI 味量化改写 / 内嵌图替换 | 改论文、论文定稿、核一下论文、引用有没有问题、AI 味、去 AI 腔、参考文献核验、幻影引用、孤儿文献、论文体检、图换掉、数字对不对 | 6.1K | **四项审计**；references/：`docx-surgery.md`（跨 run 替换 / 包内 media blob 替换 + cy 比例 / WinError5 就地写 + **必须 truncate()**）、`citation-crosscheck.md`（引用核对**两轮法** + 8 种错型 + "自己写的句子也要逐字验原文"）、`numeric-table-audit.md`（**表格数字复算法**：先破解口径再判对错 / 总效应=直接+间接判错利器 / 3 类假错）；**AI 味判据 = 本文有 + 母版 0 次**；与 survey-to-journal-paper 是上下游 |
 | `90-tooling/skill-github-backup` | 自创 skill 同步 GitHub | skill 备份、同步、开源、上 GitHub | 5.1K | 含 `scripts/sync_to_github.py` |
 | `90-tooling/skill-router` | 路由元决策 + **同类 skill 权重仲裁** | 该用哪个 skill、要不要建 skill、该自己写脚本吗、同类撞车选谁 | 5.4K | 含 `scripts/skill_match.py` + `weights.json`（**调路由改这个，不动脚本**） |
 | `90-tooling/context-continuity-handoff` | **跨模型/跨会话不丢信息**：项目根 HANDOFF.md 全量状态书（9 节）+ 工作区记忆锚点 + 追加式变更日志 | 切模型、换模型、压缩上下文、上下文丢了、别丢信息、全部保留、交接、接手、继续上次的任务、HANDOFF、跨会话 | 3.6K | 核心：**状态落到文件而不是对话**；HANDOFF 是全量不是摘要；追加式不删改；反模式与开场 checklist |
