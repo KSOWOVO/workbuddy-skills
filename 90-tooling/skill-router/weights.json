@@ -256,7 +256,7 @@
       }
     },
     "数据取证": {
-      "_note": "核验数据是否伪造/篡改；与提升 α 的反取证是两件事，后者偏优化。",
+      "_note": "核验数据是否伪造/篡改（体检，只读）；或提升信度/α 并反取证（治疗）。体检→data-fabrication-audit，治疗→survey-forensic-reliability。",
       "triggers": [
         "数据造假",
         "数据真实性",
@@ -273,11 +273,23 @@
         "直线作答",
         "信度太低",
         "α 不达标",
-        "反取证"
+        "反取证",
+        "提信度",
+        "信度提上去",
+        "提高信度",
+        "提升信度",
+        "信度不够",
+        "信度不达标",
+        "信度低",
+        "α 低",
+        "α低",
+        "信度怎么提高",
+        "让信度达标"
       ],
       "weights": {
         "data-fabrication-audit": 1.8,
-        "survey-forensic-reliability": 1.5
+        "survey-forensic-reliability": 1.8,
+        "pilot-survey-clean": 0.3
       }
     },
     "文献获取": {
@@ -425,6 +437,27 @@
       ],
       "weights": {
         "qdii-quota-check": 1.8
+      }
+    },
+    "元决策": {
+      "_note": "问「用哪个 skill / 要不要建 skill / 该不该写脚本」——路由自身。",
+      "triggers": [
+        "该用哪个 skill",
+        "用哪个 skill",
+        "用哪个技能",
+        "有没有现成的技能",
+        "要不要建个 skill",
+        "要不要建 skill",
+        "该不该建",
+        "skill 路由",
+        "找一下 skill",
+        "有没有相关能力",
+        "这个要不要存成 skill",
+        "该自己写脚本吗"
+      ],
+      "weights": {
+        "skill-router": 1.8,
+        "skill-github-backup": 0.6
       }
     }
   }
