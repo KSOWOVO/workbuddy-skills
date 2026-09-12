@@ -91,3 +91,4 @@ description: >
 ## 参考
 - `references/docx-surgery.md` —— docx 精准手术代码（跨 run 替换 / 内嵌图替换 / 段落索引定位）
 - `references/citation-crosscheck.md` —— 引用↔原文对应性核对的**两轮法**（角标抽取 → 笔记定位 → 独立复核）、派活模板、8 种常见错型
+- `references/numeric-table-audit.md` —— 表格数字×正文全面复算法（21 项恒等式 / 先破解口径再判对错 / 总效应=直接+间接判错利器 / 3 类"假错"）
