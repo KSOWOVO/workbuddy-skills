@@ -108,3 +108,49 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY   "C:/Users/13662/
 tree 一致才 `git reset --soft FETCH_HEAD`（只移动 HEAD，工作区不动，不丢改动）。
 注意 `git fetch origin main` 只更新 FETCH_HEAD，不会更新 `refs/remotes/origin/main`，
 需要再跑一次 `git fetch origin` 才会刷新 remote-tracking 分支。
+
+
+---
+
+## 🚑 `.git` 损坏的急救恢复（2026-09-12 实测有效）
+
+### 症状（任意组合出现，即可判定 .git 已损坏）
+- `git -C <repo> status` 报 `fatal: not a git repository (or any of the parent directories): .git`
+  —— **但 `.git` 目录明明存在**（本次根因：`.git/refs/` 整个被删 + objects 被清）
+- `git fetch` 报告拿到新 SHA，但紧接着 `git rev-parse origin/main` 读回**旧 SHA**（引用抖动）
+- `git push` 被拒 `! [rejected] ... (fetch first)`，可 fetch/rebase 后又显示无差异
+- `git cat-file` 报 `bad object`（本地 commit 对象已不存在）
+- `git status` 列出大量 ` M`，但 `git diff` 无任何输出
+- 注意：同一仓库可能被**多个窗口并发 git 操作**（症状 = 引用反复抖动、index 频繁被改写）。
+
+### 恢复步骤
+1. **先备份工作区**（只排 `.git`），逐一校验文件数与字节数——**文件本体通常完好，坏的只是版本历史**。
+2. `git clone <remote> <tmp>` 拿到一份干净仓库（含完整历史与正确 refs）。
+3. `os.rename(<repo>/.git, <repo>/.git_corrupt_<时间戳>)` 把损坏的挪走留档。
+4. `shutil.copytree(<tmp>/.git, <repo>/.git)` 用干净 .git 顶上（工作区不动）。
+5. `git config core.autocrlf input`（以 LF 为基准；可同时消掉 CRLF/LF 造成的假 ` M`）。
+6. `git add -u` 刷新索引——内容相同时**不会产生任何暂存差异**，可放心执行。
+7. `git status` 应显示干净；`git push origin main` 应返回 `Everything up-to-date`。
+8. 把 `.git_corrupt_*` 移出仓库目录，避免它作为 untracked 噪音干扰后续同步。
+
+### ⭐ 判定"真差异 vs 假警报"的铁律
+**`git status` 说改了 ≠ 真改了。** 唯一算数的办法是字节对质：
+
+```python
+b = subprocess.run([git,'cat-file','blob','HEAD:'+path], capture_output=True).stdout  # 必须二进制！
+d = open(disk_path,'rb').read()
+b == d   # 相等 => 假警报（stat 缓存问题），不是真改动
+```
+
+本次实测：`git status` 报 68 个已修改，逐字节对质后发现
+**60 个字节完全相同**（stat 缓存误报）、**8 个仅 CRLF/LF 行尾差异**、**真实内容差异 0 个**。
+
+> ⚠️ 坑：`git cat-file` 输出若用 `text=True` / `encoding='utf-8'` 读取会变成 **str**，
+> 此时 `len()` 是**字符数**，拿去和磁盘的**字节数**比会得出"全都不一样"的错误结论。
+> 必须 `capture_output=True` 不加 encoding，按 bytes 比较。
+
+### 修复前的并发确认（避免白忙）
+- `tasklist /FO CSV` 查有无 `git.exe` 在跑
+- 检查 `.git/index.lock` 是否存在
+- 间隔数秒观察 `.git/index` 的 mtime 是否被改写
+- 三者都干净才动手；否则先等对方跑完。

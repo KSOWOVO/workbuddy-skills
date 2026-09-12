@@ -51,6 +51,9 @@ env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY \
 > 🔧 **2026-09-11 修的两个脚本 bug**（遇到"进程崩在 `r.stderr` 为 None"/"无法提取 token"先看这里）：
 > ① 本机 git 输出**不是 UTF-8**（含 GBK 字节），`text=True` 默认解码会在 reader 线程抛 `UnicodeDecodeError`，导致 `r.stdout/stderr` 变成 `None` → 下一行 `in r.stderr` 抛 `TypeError` 直接崩。**已给所有 `subprocess.run(text=True)` 加 `encoding="utf-8", errors="replace"`，并对 `r.stderr` 做 `or ""` 兜底。**
 > ② remote URL 已被清理为裸 URL，旧的"从 remote 正则提取 token"必然返回 None → API 兜底恒失效。**已改为：remote 提取失败时回退 `git credential fill`（`printf "protocol=https\nhost=github.com\n\n"`）解析 `password=`。**
+> 🚑 **`.git` 损坏（refs 被删/对象丢失，报 "not a git repository" 但 `.git` 存在）的急救恢复**，
+> 以及"`git status` 报大量 M 但字节完全相同 = 假警报"的判定铁律，见 `references/backup-details.md` 末节。
+> **铁律：`git status` 说改了 ≠ 真改了，必须用 `git cat-file blob` 二进制字节对质。**
 
 ### 手动流程（脚本不可用时）
 ```bash
