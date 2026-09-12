@@ -48,6 +48,45 @@ def replace_in_para(p, old, new):
 - 收尾自检：改完打印被改段落全文 + 打印 `len(d.paragraphs) / len(d.tables) / len(d.inline_shapes)`，
   确认没丢段丢表。
 
+### ⚠️ 别用"整段 collapse"！会吃掉局部格式（实测踩坑）
+
+偷懒做法 `p.runs[0].text = ''.join(r.text for r in p.runs); 其余 run 清空`
+会**把整段并成一个 run**，段落里任何**局部加粗/字号**都丢失。
+真实事故：摘要段原本是 `run0="摘  要："(加粗) + run1=正文(不加粗)`，
+collapse 后**整篇摘要变粗体**。
+
+**改文本前先查 run 结构**：
+
+```python
+def sig(p):
+    return [(r.font.size.pt if r.font.size else None, bool(r.font.bold), r.font.name)
+            for r in p.runs]
+# 单 run 段 → collapse 安全；多格式段 → 必须用上面的 replace_in_para
+```
+
+**已 collapse 后的还原**（两 run 情形）：
+
+```python
+import copy
+from docx.text.run import Run
+r0 = p.runs[0]; full = r0.text
+k = full.index('：') + 1                  # 按实际分隔点切
+r0.text = full[:k]                        # 保留加粗 rPr
+el = copy.deepcopy(r0._r); r0._r.addnext(el)
+nr = Run(el, p); nr.text = full[k:]; nr.font.bold = False
+```
+
+### 收尾必做的"格式签名"全量比对
+
+改完不要只看文字 diff —— **逐段比 run 格式签名**，才能抓出被吃掉的局部格式：
+
+```python
+def sig(p): return set((r.font.size.pt if r.font.size else None, bool(r.font.bold), r.font.name) for r in p.runs)
+bad = [i for i in range(min(len(orig.paragraphs), len(new.paragraphs)))
+       if sig(orig.paragraphs[i]) != sig(new.paragraphs[i])]
+print('格式变化段:', bad)   # 只有"原空段填入新内容"一类才是正常的
+```
+
 ---
 
 ## 2. 替换 docx 内嵌图片（换外部 PNG 没用！）
@@ -156,3 +195,16 @@ for m in markers:
 # 判定：本文 > 0 且 母版 == 0  →  AI 指纹
 #       本文 ≈ 母版            →  正常，别动
 ```
+
+### ⚠️ "母版 0 次"必须实测，不能假设（实测踩坑）
+
+不要凭印象判断某个词是"AI 指纹"。**逐词数母版**再下结论。反例：
+- 一度以为 `上述` 是 AI 腔 → 实测**母版「上述」= 1 次**（论文 7 次），并非指纹；
+  而 `以上` **母版 = 0 次** → 把"上述"改成"以上"是**改错了方向**。
+- `分析`、`维度`、`系统`、`机制`、`赋能` 母版都高频 → 属正常学术词，别动。
+- 数据类论文里 `表明/显示/说明` 母版大概率 0 次（母版无数据），**不能照搬清零** ——
+  它们是指标陈述的必需动词，只需**避免单调**（拆到"可见/反映出/印证/说明"混用，母版用 `可见`）。
+- `情境/相对/充分` 这类常用学术词，母版 0 次也多因**题材差异**，硬改会变翻译腔 → **过犹不及，宁可不改**。
+
+**判据**：只有"AI 套话型"词（`本文`、`这一X`、`值得注意的是`、`双重/并行/着力`、
+`尤为关键`、`也就是说`、`总体来看`、`再次`）才是真指纹；体裁必需的实词不算。
