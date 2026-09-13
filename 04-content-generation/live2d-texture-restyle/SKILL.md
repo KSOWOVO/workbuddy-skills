@@ -59,8 +59,7 @@ agent_created: true
 ① 拆贴图分区   → part_segment.py，产出「标注图 + 分区清单 + 单部件裁剪」
 ② 量化原画风   → style_probe.py，测出明度/饱和/线条/主色
 ③ 写画风约束提示词 → 把②的数值写成 prompt 硬约束 + 上传画风样板图
-④ AI 出图 / 逐区重绘 → 你或用户操作
-⑤ 拼回贴图     → reassemble.py，按分区清单把重绘件贴回原位，替换 texture_00.png
+④ AI 出图 / 逐区重绘 → 你或用户操作（产出 concept 设计图）
 ```
 
 ### ① 拆贴图分区
@@ -71,6 +70,19 @@ python scripts/part_segment.py <texture_00.png> <outdir>
 输出：`标注图.png`（带编号+名称+坐标框）、`分区清单.json`、`parts/<编号>_<名称>.png`
 
 拿到标注图后**务必肉眼核对**：自动分块只是辅助，部件语义（哪块是刘海、哪块是尾巴）要人判断，并把坐标写进一个固定清单后续复用。
+
+**⚠️ 别靠肉眼猜部件归属——用「着色诊断法」确证。**
+
+自动分块的语义很容易猜错。**实测翻车**：以为「身体+裙」是一个岛，改完渲染才发现 **裙子是另一个独立的岛**，
+结果衣服换了、裙子还是旧的。靠裁剪看形状看不出来。
+
+做法（一次渲染认全所有岛）：
+1. 对贴图做 alpha 连通域，给**每个岛填一个高区分度的纯色** → `debug_texture.png`
+2. 用它替换模型贴图，**渲染一次**（见 ⑥ 本地渲染）
+3. 按颜色反查每个岛出现在身体的哪个位置 → 得到确凿的「岛 ↔ 部位」对照表
+
+脚本：`scripts/island_diagnostic.py`（生成着色图）+ `scripts/island_legend.py`（从渲染图反查对照表）
+
 
 ### ② 量化原画风（本 skill 的核心）
 
@@ -109,6 +121,88 @@ python scripts/style_probe.py <AI生成图> --label generated
 ```
 
 **画风样板图怎么做**：把原贴图的**脸/皮肤/服装/头发**四块放大拼成一张 2×2 图，配中文小标题。这比只描述文字有效得多。
+
+### ④ AI 出图 → 收图 → 批量筛查
+
+用 ③ 的提示词在 AI 网页版出图。收图后：
+```bash
+python scripts/batch_scan.py <原贴图> <图片目录> --ref-bg alpha --picked <达标目录>
+python scripts/split_grid.py <网格图> <输出目录>     # 2×2 拆图 + 量宽高比
+```
+**宽高比 > 0.6 就是被裁成半身**（正常全身 0.40~0.55），下半身缺失会导致鞋子等分区没参考。
+
+### ⑤ 产出新贴图的两种方式（优先试 B）
+
+| | **A. AI 逐区重绘** | **B. 贴图迁移（优先试）** |
+|---|---|---|
+| 做法 | 每个分区单独喂 AI 图生图重绘 | concept 图对应区域**按比例映射**到原贴图的 UV 岛，用岛的 alpha 做遮罩 |
+| 需要用户 | ✅ 要（每区一次，或拼成任务图批量） | ❌ **零操作，全自动** |
+| 原画保真 | 靠 AI 重画，可能跑偏 | **直接用 concept 的原画**，最忠实 |
+| 风格一致性 | 需反复调 | **天然一致**（同一张原画） |
+| 局限 | 慢、贵 | 窄处会拉伸；形状差异大时变形 |
+
+**B 的做法（实测有效）**：
+1. 用 ① 的着色诊断确证「岛 ↔ 部位」，别猜
+2. 量出目标 UV 岛的 **alpha 包围盒**（不是区域框，是岛本身）
+3. 取源框**按 concept 的人物包围盒归一化**（`fx, fy` 比例），这样同一套参数能适配不同画幅的稿子
+4. `concept区域.resize(岛尺寸)` → `putalpha(岛的alpha)` → `alpha_composite` 贴回原位
+5. 边缘 1~2px 高斯羽化避免硬边
+
+**必须处理的细节（都是实测踩出来的）**：
+- **手臂岛的底部是「手」**（肤色），不能迁移。用 `keep_bottom≈0.17` 只迁移袖子部分
+- **裙子往往是独立岛**，不在身体岛里，别漏
+- **取源框下沿别伸进腿**：裙子框超出裙摆波浪线会把肤色糊到裙子上
+- **不同 concept 的人物比例可能不同**（同一比例参数会错位）→ 用人物包围盒归一化 + 允许按稿覆盖
+- **道具**（锤子/武器）若新设计里没有，直接把对应岛的 alpha 置 0 即可抹掉
+- 脖子等**细窄区域**映射后会横向压缩，属可接受瑕疵
+
+### ⑥ 验证：本地渲染 + 截图（不用装 Live2D 软件）
+
+改完贴图必须**渲染看一眼**再交付，否则错位/糊色问题会直接交到用户手上。
+
+```bash
+# 1) 下载三个库（需代理）
+#    live2dcubismcore.min.js  https://cubism.live2d.com/sdk-web/cubismcore/
+#    pixi.min.js (6.x)        https://cdn.jsdelivr.net/npm/pixi.js@6.5.10/dist/browser/
+#    cubism4.min.js           https://cdn.jsdelivr.net/npm/pixi-live2d-display@0.4.0/dist/
+# 2) 写一个 HTML：PIXI.Application + PIXI.live2d.Live2DModel.from('模型.model3.json')
+# 3) 用 python -m http.server 起本地服务（file:// 会被 CORS 拦）
+# 4) 无头 Edge 截图
+"C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe" \
+  --headless=new --enable-unsafe-swiftshader --hide-scrollbars \
+  --window-size=680,1000 --virtual-time-budget=18000 \
+  --screenshot=out.png "http://127.0.0.1:8766/one.html?m=zipped"
+```
+
+**关键坑**：
+- **居中要用 `getLocalBounds()` 而不是 `model.width`**。Live2D 模型画布往往远大于角色，
+  用画布尺寸居中会把角色推到角落
+- 无头模式必须加 `--enable-unsafe-swiftshader`，否则 WebGL 起不来（黑屏/空白）
+- `--virtual-time-budget` 给足时间等模型加载
+- **后台起的 http server 会自己死**，截图报 `127.0.0.1 拒绝连接` 就重启它，不是代码问题
+
+### ⑦ 打包成 VTube Studio 可直接导入的模型
+
+```
+交付_OC模型/
+  V5_关拉链高领/                ← 文件夹名即 VTS 里看到的分类
+    OC_zipped.model3.json       ← 文件名即模型显示名
+    OC_zipped.moc3
+    OC_zipped.physics3.json
+    OC_zipped.cdi3.json
+    icon.png
+    OC_zipped.2048/texture_00.png
+  V4_敞开外套/
+  导入说明.txt
+```
+
+- 直接复制原模型的 `.moc3` / `.physics3.json` / `.cdi3.json`，只替换贴图
+- **重命名后必须同步改 `model3.json` 里的 `FileReferences`**（Moc / Textures / Physics / DisplayInfo）
+- `model3.json` 里补上标准眨眼分组，否则 VTS 里不眨眼：
+  `"Groups":[{"Target":"Parameter","Name":"EyeBlink","Ids":["ParamEyeLOpen","ParamEyeROpen"]}]`
+- **多套服装 = 多个文件夹**，网格相同只换贴图，表情/物理完全一致
+
+
 
 ## 三、三大坑（都踩过）
 
@@ -174,27 +268,35 @@ AI 网页版**没有固定 seed**，同一提示词多刷几版挑最好的。
 ## 六、文件
 
 ```
-scripts/part_segment.py  贴图分区（网格法 + 连通域 + 标注图 + 单部件裁剪 + manifest）
-scripts/style_probe.py   画风量化（背景分离 + V/S 分布 + 线条色与占比 + 主色），支持 --compare
-scripts/reassemble.py    重绘件按 manifest 原位贴回，缺失部件自动沿用原图
-scripts/batch_scan.py    批量筛查：以原稿为基准给一堆候选图打「画风贴合分」+ 排序 + 达标自动挑出
+scripts/part_segment.py       贴图分区（网格法 + 连通域 + 标注图 + 单部件裁剪 + manifest）
+scripts/style_probe.py        画风量化（背景分离 + V/S 分布 + 线条色与占比 + 主色），支持 --compare
+scripts/batch_scan.py         批量筛查：以原稿为基准给候选图打画风贴合分 + 排序 + 达标自动挑出
+scripts/reassemble.py         重绘件按 manifest 原位贴回，缺失部件自动沿用原图
+scripts/island_diagnostic.py  着色诊断：给每个 UV 岛填纯色，输出可渲染的 debug_texture
+scripts/island_legend.py      从渲染截图反查「岛 ↔ 身体部位」对照表
+scripts/package_vts.py        打包成 VTube Studio 可直接导入的模型文件夹
 ```
 
-四个脚本均已实测跑通（2026-09-13）。
+全部已实测跑通（2026-09-13）。
 
 **推荐用法**：
 ```bash
-# 单图体检
-python style_probe.py 原贴图.png --bg alpha
-python style_probe.py 生成图.jpg --bg white --compare        # 两组参数对比需分两次跑
+# 拆分区 + 认部件
+python scripts/part_segment.py 贴图.png out/
+python scripts/island_diagnostic.py 贴图.png uv/            # → debug_texture.png
+#   用 debug_texture.png 替换模型贴图渲染一次（见 ⑥）
+python scripts/island_legend.py 渲染截图.png uv/             # → island_part_map.txt
 
-# 批量：AI 一次出了 20 张，自动排序挑出达标的
-python batch_scan.py 原贴图.png ./gemini_output --ref-bg alpha --picked ./picked
-#   → 生成 batch_ranking.png（带分数的总览图）+ batch_scores.json
-#   → 并打印「最佳候选与原稿的主要差距」，比单纯打分更有指导性
+# 画风体检 / 批量筛查
+python scripts/style_probe.py 原贴图.png --bg alpha
+python scripts/batch_scan.py 原贴图.png ./gemini_output --ref-bg alpha --picked ./picked
+
+# 交付
+python scripts/package_vts.py --src <原模型目录> --tex 新贴图.png --name OC_xxx --out 交付/
 ```
-`batch_scan.py` 的 `--ref-bg alpha`（原贴图）或 `auto`（普通插画）**必须选对**，
-参考图选错（例如拿了带深色背景的宣传图）会让全部分数失真。
+
+`batch_scan.py` 的 `--ref-bg` **必须选对**：原贴图用 `alpha`，普通插画用 `auto`。
+参考图选错（例如拿带深色背景的宣传图）会让全部分数失真。
 
 **拼回时注意**：重绘件尺寸若与 box 不符会自动缩放，但缩放会引入模糊并可能让 UV 对齐偏移——
 **优先在重绘阶段就保持原尺寸**，必要时用 `--strict-size` 强制报错。
@@ -207,7 +309,10 @@ python batch_scan.py 原贴图.png ./gemini_output --ref-bg alpha --picked ./pic
 - [ ] 线条颜色是近黑、占比 2~3%
 - [ ] 原设识别元素保留 ≥ 90%
 - [ ] 大件（如有）底色是浅色
+- [ ] **已用着色诊断确证「岛 ↔ 部位」**（别靠肉眼猜，实测漏过裙子）
 - [ ] 要保留的部位（尤其脸部 5 个分区）已明确列入「不重绘」，拼图时依赖自动沿用
 - [ ] 新部件的剪影在原网格 UV 范围内（超出部分不会显示）
 - [ ] `batch_scan.py` 的参考图与 `--ref-bg` 模式选对（选错会让全部分数失真）
+- [ ] **已本地渲染看过效果**再交付（⑥），没渲染过不算完成
 - [ ] 重绘件全部留在原坐标框内，画布尺寸未变
+- [ ] 交付的 VTS 文件夹里 `model3.json` 的引用路径已随重命名同步更新
