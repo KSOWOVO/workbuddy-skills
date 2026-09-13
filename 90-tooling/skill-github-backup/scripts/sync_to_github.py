@@ -199,9 +199,12 @@ def main():
 
     print("== 2/4 本地 commit ==")
     git(["add", rel])
-    # INDEX.md 是全局索引，动过 skill 就必然要一起同步，避免只提交目录留下半截状态
-    if os.path.isfile(os.path.join(SKILLS_DIR, "INDEX.md")):
-        git(["add", "INDEX.md"])
+    # 全局索引类文件：动过 skill 就必然要一起同步，避免只提交目录留下半截状态
+    # ① INDEX.md        —— 技能总表
+    # ② weights.json    —— skill-router 权重表（新增 skill 必须注册在此，否则路由永远命中不到）
+    for extra in ("INDEX.md", "90-tooling/skill-router/weights.json"):
+        if os.path.isfile(os.path.join(SKILLS_DIR, extra.replace("/", os.sep))):
+            git(["add", extra])
     r = git(["commit", "-m", msg])
     if r.returncode != 0:
         tip = ((r.stderr or "") + "\n" + (r.stdout or "")).strip()

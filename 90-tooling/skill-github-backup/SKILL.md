@@ -35,6 +35,10 @@ description: >
 4. 仓库 .gitignore 已屏蔽：`.neodata_token`、`*.token`、`*.migration.json`、`*_migration.json`、`.bm_skillid_migration.json` 等。**新增 skill 内部文件若含新的敏感模式，先补 .gitignore 再同步。**
 5. **仓库必须保持分类整齐**：每个 skill 放在对应功能域目录（见上方结构）。类别映射：浏览器/网页自动化→`01-browser-automation`；知识库/内容/笔记管理→`02-knowledge-management`；数据/问卷/分析→`03-data-analysis`；**内容生成/写作/插画/日报→`04-content-generation`；系统工具/软件下载/音频→`05-system-utils`**；工具/基础设施/自身→`90-tooling`；其他领域用 `10-`、`20-`… 两位数前缀新建。**同步前先检查 skill 是否在正确分类目录，不在则 `git mv` 过去；新增 skill 按功能选/建分类。** 别让目录扁平堆在一起。
 6. **修改即覆盖**：对已有 skill 的修改，直接 `git add <分类/技能目录>` + commit + push，git 自动覆盖云端旧版（不用删旧目录、不用建副本）。新建 skill 同理精准 add 该目录即可。
+7. **别漏全局索引文件**（2026-09-13 踩坑固化）：新建/更新 skill 时，除了 skill 目录本身，**`INDEX.md` 和 `90-tooling/skill-router/weights.json` 也必须一起提交**。
+   `weights.json` 尤其容易漏——按用户约定，新增 skill 必须在该表里加一个能力域，否则路由**永远命中不到它，skill 等于白做**。
+   历史上脚本只 add 了 skill 目录 + INDEX.md，导致 `weights.json` 的注册长期留在本地推不上去（表现为 sync 报"无改动需要提交"但远端缺少注册）。
+   **脚本已修**（`sync_to_github.py` 第 2 步现在一并 add 这两个文件）。手动流程时同样别忘 `git add INDEX.md 90-tooling/skill-router/weights.json`。
 
 ## 日常同步流程（每新增/更新自创 skill 后执行）
 
