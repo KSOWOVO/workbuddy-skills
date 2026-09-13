@@ -17,19 +17,23 @@ description: >
 - 本地位置：`~/.workbuddy/skills`（已 git init，分支 `main`）。**认证现状（2026-09-08 更新）**：remote URL 已不含 token（被清理为裸 URL），改由 **Windows 凭据管理器（GCM）自动提供凭据**——git push/fetch 直接可用；**调 GitHub REST API 时用 `printf "protocol=https\nhost=github.com\n\n" | git credential fill | grep '^password=' | cut -d= -f2` 取 token**（40 位 ghp_），不要再从 remote URL 提取（会拿到 URL 本身 → 401）。
 - 仓库结构（按功能域分类，数字前缀保序）：
   ```
-  01-browser-automation/   → browser-ocr
-  02-knowledge-management/ → ima-knowledge-upload
-  03-data-analysis/        → pilot-survey-clean
-  90-tooling/              → skill-github-backup（本 skill 自身）
+  01-browser-automation/   → browser-ocr、cnki-institutional-download
+  02-knowledge-management/ → ima-knowledge-upload、learning-workbench-sync、obsidian-vault-digest
+  03-data-analysis/        → pilot-survey-clean、data-fabrication-audit、survey-forensic-reliability、qdii-quota-check
+  04-content-generation/   → daily-intel-briefing、exam-wordbank-workspace、svg-to-animated-gif、
+                             survey-to-journal-paper、docx-paper-audit-revision、live2d-texture-restyle
+  05-system-utils/         → windows-app-official-download、phone-audio-to-pc
+  90-tooling/              → skill-github-backup（本 skill 自身）、skill-router、context-continuity-handoff、
+                             skland-endfield-toolkit
   ```
-  `.gitignore` 在根目录。
+  `.gitignore` 在根目录。**以 `skills/INDEX.md` 与 `git ls-files` 为准，本清单可能滞后于新增分类。**
 
 ## 核心原则（不可违反）
 1. **只同步 `agent_created: true` 的自创 skill**，不碰系统/市场预装 skill（版权与体积问题）。
 2. **绝不用 `git add -A`**，逐目录精准 `git add <skill名>`，防止 token/内部文件混入。
 3. 同步前必须**扫敏感文件**：`find <skill目录> -type f | grep -iE "token|secret|credential|\.env|\.json$"`，有则先脱敏或跳过。
 4. 仓库 .gitignore 已屏蔽：`.neodata_token`、`*.token`、`*.migration.json`、`*_migration.json`、`.bm_skillid_migration.json` 等。**新增 skill 内部文件若含新的敏感模式，先补 .gitignore 再同步。**
-5. **仓库必须保持分类整齐**：每个 skill 放在对应功能域目录（见上方结构）。类别映射：浏览器/网页自动化→`01-browser-automation`；知识库/内容/笔记管理→`02-knowledge-management`；数据/问卷/分析→`03-data-analysis`；工具/基础设施/自身→`90-tooling`；其他领域用 `10-`、`20-`… 两位数前缀新建。**同步前先检查 skill 是否在正确分类目录，不在则 `git mv` 过去；新增 skill 按功能选/建分类。** 别让目录扁平堆在一起。
+5. **仓库必须保持分类整齐**：每个 skill 放在对应功能域目录（见上方结构）。类别映射：浏览器/网页自动化→`01-browser-automation`；知识库/内容/笔记管理→`02-knowledge-management`；数据/问卷/分析→`03-data-analysis`；**内容生成/写作/插画/日报→`04-content-generation`；系统工具/软件下载/音频→`05-system-utils`**；工具/基础设施/自身→`90-tooling`；其他领域用 `10-`、`20-`… 两位数前缀新建。**同步前先检查 skill 是否在正确分类目录，不在则 `git mv` 过去；新增 skill 按功能选/建分类。** 别让目录扁平堆在一起。
 6. **修改即覆盖**：对已有 skill 的修改，直接 `git add <分类/技能目录>` + commit + push，git 自动覆盖云端旧版（不用删旧目录、不用建副本）。新建 skill 同理精准 add 该目录即可。
 
 ## 日常同步流程（每新增/更新自创 skill 后执行）
