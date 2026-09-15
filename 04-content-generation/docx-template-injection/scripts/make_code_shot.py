@@ -108,7 +108,7 @@ for i, segs in enumerate(L):
                         box_alignment=(0, 1.0), pad=0)
     ax.add_artist(ab)
 
-plt.savefig(os.path.join(FIGS, "figG_code.png"), dpi=300,
+plt.savefig(os.path.join(FIGS, "fig9_code.png"), dpi=300,
             bbox_inches="tight", pad_inches=0.16, facecolor="white")
 plt.close()
-print("  ✔ figG_code.png  (黑底代码截图, %d 行)" % n)
+print("  ✔ fig9_code.png  (黑底代码截图, %d 行)" % n)
