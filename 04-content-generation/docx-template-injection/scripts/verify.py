@@ -6,7 +6,7 @@ from docx import Document
 from docx.oxml.ns import qn
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(BASE, "out", "新媒体营销-第一次作业-伍凯森组.docx")
+OUT = os.path.join(BASE, "out", "新媒体营销-第一次作业-伍凯森组_终版.docx")
 doc = Document(OUT)
 OK, BAD = "✔", "✘"
 errs = []
