@@ -1,39 +1,39 @@
 # -*- coding: utf-8 -*-
 """
-把正文内容注入作业模板 docx（v3：修复图片未嵌入的根因）
-根因：v2 用「搬运 XML 元素」的方式注入，图片的 r:embed 关系留在临时文档中，
-      目标文档 rels 里没有对应关系 → Word 打开图片全部显示不出来。
-修复：直接在目标文档的正文单元格上创建段落与图片，确保图片关系正确写入 document.xml.rels。
+作业正文注入 v4
+- 支持中文图号（图一~图八）
+- 支持 @@IMG:文件|图注@@ 案例图标记
+- 支持 markdown 表格 → docx 表格（用于附录数据表）
+- 支持 ``` 代码块（等宽字体，用于附录爬虫代码）
+- 图片直接创建在目标文档的单元格上（关键：保证 rels 正确，图片能显示）
 """
 import os, re, shutil, zipfile
 from docx import Document
 from docx.shared import Pt, Inches, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING
+from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TPL = r"C:\Users\13662\Desktop\新媒体营销-第一次作业(1).docx"
 OUTDIR = os.path.join(BASE, "out")
-FIGS = os.path.join(BASE, "figs")
+FIGS = os.path.join(BASE, "figs3")
 ASSETS = os.path.join(BASE, "assets", "final")
-OUT = os.path.join(OUTDIR, "新媒体营销-第一次作业-伍凯森组.docx")
+OUT = os.path.join(OUTDIR, "新媒体营销-第一次作业-伍凯森组_终版.docx")
 MD = open(os.path.join(OUTDIR, "正文.md"), encoding="utf-8").read()
 
-IMG_W = 5.4      # 英寸（表格单元格可用宽度约 5.74 英寸）
+IMG_W = 5.4
 
 FIGMAP = {
-    "图1":  ("fig1_pv_views.png",   "图1  《黑神话》系列官方PV在B站的传播量级（本组2026-09-15采集）"),
-    "图2":  ("fig2_funnel.png",     "图2  《黑神话：悟空》13分钟实机演示的B站互动结构：投币率反超点赞率"),
-    "图3":  ("fig3_pgc_vs_ugc.png", "图3  官方PGC与创作者UGC的传播效率对比（本组2026-09-15采集）"),
-    "图4":  ("fig4_zhongkui.png",   "图4  《黑神话：钟馗》系列内容的传播走势（零发售窗口期热度回升）"),
-    "图5":  ("fig5_treemap.png",    "图5  《黑神话》内容生态矩形树状图：面积＝播放量，颜色＝内容类型"),
-    "图6":  ("fig6_pie.png",        "图6  内容类型分布：数量占比与播放量占比对比"),
-    "图7":  ("fig7_radar.png",      "图7  五支官方PV的多维互动率雷达图"),
-    "图8":  ("fig8_heatmap.png",    "图8  各内容类型的平均互动表现热力图"),
-    "图9":  ("fig9_top12.png",      "图9  播放量 TOP12 内容排行（颜色＝内容类型）"),
-    "图10": ("fig10_5a_model.png",  "图10  游戏科学《黑神话》营销的5A消费者路径转化（自绘）"),
+    "图二": ("figB_flow.png",        "图二  本报告的数据采集与处理流程（本组自绘）"),
+    "图三": ("figA_pv.png",          "图三  游戏科学官方PV在哔哩哔哩的传播量级（本组采集）"),
+    "图四": ("figC_treemap.png",     "图四  内容生态结构：面积表示播放量，颜色区分内容类型（本组采集）"),
+    "图五": ("figF_top10.png",       "图五  播放量前十的内容排行（本组采集）"),
+    "图六": ("figD_interaction.png", "图六  《黑神话：悟空》13分钟实机演示的互动结构（本组采集）"),
+    "图七": ("figE_zhongkui.png",    "图七  《黑神话：钟馗》的传播走势（本组采集）"),
 }
+# 图一、图八为案例实拍/官方海报，走 @@IMG: 标记
 
 
 def set_font(run, name="宋体", size=10.5, bold=False):
@@ -49,136 +49,176 @@ def set_font(run, name="宋体", size=10.5, bold=False):
         rf.set(qn(a), name)
 
 
-def set_spacing(p, multiple=1.5, first_indent_chars=2, space_before=0, space_after=0):
+def sp(p, multiple=1.5, indent=2, before=0, after=3):
     pf = p.paragraph_format
     pf.line_spacing_rule = WD_LINE_SPACING.MULTIPLE
     pf.line_spacing = multiple
-    pf.space_before = Pt(space_before)
-    pf.space_after = Pt(space_after)
-    if first_indent_chars:
+    pf.space_before = Pt(before)
+    pf.space_after = Pt(after)
+    if indent:
         pPr = p._element.get_or_add_pPr()
         ind = pPr.find(qn("w:ind"))
         if ind is None:
             ind = OxmlElement("w:ind"); pPr.append(ind)
-        ind.set(qn("w:firstLineChars"), str(int(first_indent_chars * 100)))
+        ind.set(qn("w:firstLineChars"), str(int(indent * 100)))
         ind.set(qn("w:firstLine"), "0")
 
 
-# ---------- 注意：以下函数全部作用在【目标文档的单元格】上 ----------
-def mk_body(cell, text):
+def body(cell, text):
     p = cell.add_paragraph()
-    set_spacing(p, 1.5, 2, 0, 3)
+    sp(p, 1.5, 2)
     p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-    for seg in re.split(r"(\*\*[^*]+\*\*)", text):
-        if not seg:
-            continue
-        if seg.startswith("**") and seg.endswith("**"):
-            set_font(p.add_run(seg[2:-2]), "宋体", 10.5, True)
-        else:
-            set_font(p.add_run(seg), "宋体", 10.5, False)
+    set_font(p.add_run(text), "宋体", 10.5)
     return p
 
 
-def mk_h2(cell, text):
+def h2(cell, text):
     p = cell.add_paragraph()
-    set_spacing(p, 1.5, 0, 10, 5)
+    sp(p, 1.5, 0, 10, 5)
     set_font(p.add_run(text), "宋体", 12, True)
     return p
 
 
-def mk_h3(cell, text):
+def h3(cell, text):
     p = cell.add_paragraph()
-    set_spacing(p, 1.5, 0, 7, 3)
+    sp(p, 1.5, 0, 7, 3)
     set_font(p.add_run(text), "宋体", 10.5, True)
     return p
 
 
-def mk_fig(cell, img, caption):
+def figure(cell, img, caption):
     p = cell.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    set_spacing(p, 1.0, 0, 8, 2)
+    sp(p, 1.0, 0, 8, 2)
     p.add_run().add_picture(img, width=Inches(IMG_W))
     c = cell.add_paragraph(); c.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    set_spacing(c, 1.0, 0, 0, 10)
-    set_font(c.add_run(caption), "宋体", 9, False)
+    sp(c, 1.0, 0, 0, 10)
+    set_font(c.add_run(caption), "宋体", 9)
 
 
-# ============================ 打开模板并定位正文单元格 ============================
+def code_block(cell, lines):
+    for j, ln in enumerate(lines):
+        p = cell.add_paragraph()
+        sp(p, 1.15, 0, 4 if j == 0 else 0, 4 if j == len(lines) - 1 else 0)
+        set_font(p.add_run(ln if ln.strip() else " "), "Consolas", 8.5)
+
+
+def md_table(cell, rows):
+    t = cell.add_table(rows=len(rows), cols=len(rows[0]))
+    t.style = "Table Grid"
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for ri, row in enumerate(rows):
+        for ci, val in enumerate(row):
+            c = t.cell(ri, ci)
+            for p in list(c.paragraphs):
+                p._element.getparent().remove(p._element)
+            p = c.add_paragraph()
+            sp(p, 1.15, 0, 2, 2)
+            p.alignment = WD_ALIGN_PARAGRAPH.CENTER if ri == 0 else WD_ALIGN_PARAGRAPH.LEFT
+            set_font(p.add_run(val), "宋体", 9, bold=(ri == 0))
+    return t
+
+
+# ============================ 打开模板 ============================
 shutil.copy(TPL, OUT)
 doc = Document(OUT)
 
 target = None
 for tbl in doc.tables:
     for row in tbl.rows:
-        for i, cell in enumerate(row.cells):
-            if cell.text.strip() == "正文" and i + 1 < len(row.cells):
-                target = row.cells[i + 1]
-                break
-        if target is not None:
-            break
-    if target is not None:
-        break
+        for ci, cell in enumerate(row.cells):
+            if cell.text.strip() == "正文" and ci + 1 < len(row.cells):
+                target = row.cells[ci + 1]; break
+        if target is not None: break
+    if target is not None: break
 assert target is not None, "未找到正文单元格"
 
-# 清空该单元格原有段落（含红色说明文字）
 for p in list(target.paragraphs):
     p._element.getparent().remove(p._element)
 
-# ============================ 直接在单元格内构建内容 ============================
-inserted, n_case = set(), 0
-for ln in MD.split("\n"):
-    s = ln.rstrip()
+# ============================ 解析并写入 ============================
+lines = MD.split("\n")
+i = 0
+used_fig, n_case = set(), 0
+while i < len(lines):
+    s = lines[i].rstrip()
     if not s.strip() or s.startswith("> ") or s.startswith("# "):
-        continue
+        i += 1; continue
+
     m = re.match(r"^@@IMG:([^|]+)\|([^@]+)@@$", s.strip())
     if m:
         fn, cap = m.group(1).strip(), m.group(2).strip()
-        p = os.path.join(ASSETS, fn + ".jpg")
-        if os.path.exists(p):
-            mk_fig(target, p, cap); n_case += 1
+        path = os.path.join(ASSETS, fn + ".jpg")
+        if os.path.exists(path):
+            figure(target, path, cap); n_case += 1
         else:
-            print("   [案例图缺失]", p)
+            print("   [案例图缺失]", path)
+        i += 1; continue
+
+    if s.strip().startswith("```"):
+        buf = []
+        i += 1
+        while i < len(lines) and not lines[i].strip().startswith("```"):
+            buf.append(lines[i].rstrip()); i += 1
+        i += 1
+        code_block(target, buf)
         continue
-    if s.startswith("## "):
-        mk_h2(target, s[3:].strip()); continue
+
+    if s.strip().startswith("|"):
+        block = []
+        while i < len(lines) and lines[i].strip().startswith("|"):
+            block.append(lines[i].strip()); i += 1
+        rows = []
+        for b in block:
+            if re.match(r"^\|[\s:\-|]+\|$", b):
+                continue
+            rows.append([c.strip() for c in b.strip("|").split("|")])
+        ncol = max(len(r) for r in rows)
+        rows = [r + [""] * (ncol - len(r)) for r in rows]
+        md_table(target, rows)
+        target.add_paragraph()
+        continue
+
     if s.startswith("### "):
-        mk_h3(target, s[4:].strip()); continue
-    if s.startswith("- "):
-        mk_body(target, "　　" + s[2:].strip()); continue
+        h3(target, s[4:].strip()); i += 1; continue
+    if s.startswith("## "):
+        h2(target, s[3:].strip()); i += 1; continue
 
-    mk_body(target, s)
-    for k in re.findall(r"图\d+", s):
-        if k in FIGMAP and k not in inserted:
+    if re.match(r"^\[\d+\]", s.strip()):
+        p = target.add_paragraph()
+        sp(p, 1.4, 0, 0, 2)
+        set_font(p.add_run(s.strip()), "宋体", 9)
+        i += 1; continue
+
+    body(target, s)
+    for k in re.findall(r"图[一二三四五六七八九十]+", s):
+        if k in FIGMAP and k not in used_fig:
             f, cap = FIGMAP[k]
-            mk_fig(target, os.path.join(FIGS, f), cap)
-            inserted.add(k)
+            figure(target, os.path.join(FIGS, f), cap)
+            used_fig.add(k)
+    i += 1
 
-missing = [k for k in FIGMAP if k not in inserted]
+missing = [k for k in FIGMAP if k not in used_fig]
 if missing:
-    print("⚠ 未按引用位置插入，追加到末尾:", missing)
-    for k in sorted(missing, key=lambda x: int(x[1:])):
-        f, cap = FIGMAP[k]
-        mk_fig(target, os.path.join(FIGS, f), cap)
+    print("⚠ 未在正文引用：", missing)
 
 doc.save(OUT)
-print("数据图:", len(inserted), "| 案例图:", n_case)
+print("数据图 %d 张 | 案例图 %d 张" % (len(used_fig), n_case))
 print("已生成:", OUT)
 
-# ============================ 复核（关键：检查图片是否真嵌入） ============================
+# ============================ 复核 ============================
 d2 = Document(OUT)
 for tbl in d2.tables:
     for row in tbl.rows:
-        for i, cell in enumerate(row.cells):
-            if cell.text.strip() == "正文" and i + 1 < len(row.cells):
-                tc = row.cells[i + 1]._tc
+        for ci, cell in enumerate(row.cells):
+            if cell.text.strip() == "正文" and ci + 1 < len(row.cells):
+                tc = row.cells[ci + 1]._tc
                 txt = "".join(t.text or "" for t in tc.findall(".//" + qn("w:t")))
-                print("正文中文字数:", len(re.findall(r"[\u4e00-\u9fff]", txt)))
-                print("内嵌图片(drawing)数:", len(tc.findall(".//" + qn("w:drawing"))))
+                print("正文字数:", len(re.findall(r"[\u4e00-\u9fff]", txt)))
+                print("图片对象:", len(tc.findall(".//" + qn("w:drawing"))))
+                print("内嵌表格:", len(tc.findall(qn("w:tbl"))))
 
 z = zipfile.ZipFile(OUT)
-media = sorted([n for n in z.namelist() if n.startswith("word/media/")])
+media = [n for n in z.namelist() if n.startswith("word/media/")]
 rels = z.read("word/_rels/document.xml.rels").decode("utf-8")
-print("\nword/media 文件数:", len(media))
-for m in media:
-    print("   ", m, "%.0f KB" % (z.getinfo(m).file_size / 1024))
-print("图片关系(IMAGE)数:", rels.count("relationships/image"))
-print("文件总大小: %.1f MB" % (os.path.getsize(OUT) / 1024 / 1024))
+print("word/media:", len(media), "| 图片关系:", rels.count("relationships/image"))
+print("文件大小: %.1f MB" % (os.path.getsize(OUT) / 1024 / 1024))
