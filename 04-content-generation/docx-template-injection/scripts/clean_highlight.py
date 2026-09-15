@@ -2,7 +2,7 @@
 """清除残留的黄色高亮格式（说明性文字的高亮标记）"""
 import os, zipfile, shutil, re
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(BASE, "out", "新媒体营销-第一次作业-伍凯森组.docx")
+OUT = os.path.join(BASE, "out", "新媒体营销-第一次作业-伍凯森组_终版.docx")
 TMP = OUT + ".tmp"
 
 zin = zipfile.ZipFile(OUT, "r")
