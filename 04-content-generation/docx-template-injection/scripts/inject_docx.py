@@ -20,19 +20,31 @@ TPL = r"C:\Users\13662\Desktop\新媒体营销-第一次作业(1).docx"
 OUTDIR = os.path.join(BASE, "out")
 FIGS = os.path.join(BASE, "figs3")
 ASSETS = os.path.join(BASE, "assets", "final")
-OUT = os.path.join(OUTDIR, "新媒体营销-第一次作业-伍凯森组_终版.docx")
+OUT = os.path.join(OUTDIR, "新媒体营销-第一次作业-伍凯森组.docx")
 MD = open(os.path.join(OUTDIR, "正文.md"), encoding="utf-8").read()
 
 IMG_W = 5.4
 
 FIGMAP = {
-    "图二": ("figB_flow.png",        "图二  本报告的数据采集与处理流程（本组自绘）"),
-    "图三": ("figA_pv.png",          "图三  游戏科学官方PV在哔哩哔哩的传播量级（本组采集）"),
-    "图四": ("figC_treemap.png",     "图四  内容生态结构：面积表示播放量，颜色区分内容类型（本组采集）"),
-    "图五": ("figF_top10.png",       "图五  播放量前十的内容排行（本组采集）"),
-    "图六": ("figD_interaction.png", "图六  《黑神话：悟空》13分钟实机演示的互动结构（本组采集）"),
-    "图七": ("figE_zhongkui.png",    "图七  《黑神话：钟馗》的传播走势（本组采集）"),
+    "图2": ("figB_flow.png",        "图2  本报告的数据采集与处理流程（本组自绘）"),
+    "图3": ("figA_pv.png",          "图3  游戏科学官方PV在哔哩哔哩的传播量级（本组采集）"),
+    "图4": ("figC_treemap.png",     "图4  内容生态结构：面积表示播放量，颜色区分内容类型（本组采集）"),
+    "图5": ("figF_top10.png",       "图5  播放量前十的内容排行（本组采集）"),
+    "图6": ("figD_interaction.png", "图6  《黑神话：悟空》13分钟实机演示的互动结构（本组采集）"),
+    "图7": ("figE_zhongkui.png",    "图7  《黑神话：钟馗》的传播走势（本组采集）"),
+    "图9": ("figG_code.png",        "图9  数据采集脚本代码（Python）"),
 }
+# 图1、图8 为官方海报，走 @@IMG: 标记
+
+
+def page_break(cell):
+    """插入分页符"""
+    p = cell.add_paragraph()
+    r = p.add_run()
+    br = OxmlElement("w:br")
+    br.set(qn("w:type"), "page")
+    r._element.append(br)
+    return p
 # 图一、图八为案例实拍/官方海报，走 @@IMG: 标记
 
 
@@ -181,7 +193,10 @@ while i < len(lines):
     if s.startswith("### "):
         h3(target, s[4:].strip()); i += 1; continue
     if s.startswith("## "):
-        h2(target, s[3:].strip()); i += 1; continue
+        title = s[3:].strip()
+        if title.startswith("附录二"):
+            page_break(target)          # 附录二另起一页
+        h2(target, title); i += 1; continue
 
     if re.match(r"^\[\d+\]", s.strip()):
         p = target.add_paragraph()
@@ -189,8 +204,15 @@ while i < len(lines):
         set_font(p.add_run(s.strip()), "宋体", 9)
         i += 1; continue
 
+    if re.match(r"^表\d+", s.strip()):
+        p = target.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        sp(p, 1.3, 0, 8, 4)
+        set_font(p.add_run(s.strip()), "宋体", 9.5, True)
+        i += 1; continue
+
     body(target, s)
-    for k in re.findall(r"图[一二三四五六七八九十]+", s):
+    for k in re.findall(r"图\d+", s):
         if k in FIGMAP and k not in used_fig:
             f, cap = FIGMAP[k]
             figure(target, os.path.join(FIGS, f), cap)

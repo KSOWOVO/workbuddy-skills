@@ -157,6 +157,54 @@ for k in re.findall(r"图\d+", s):     # ✔
 
 ---
 
+## 附录：代码不要贴整段，要「截图」
+
+用户明确不要整段代码贴进 Word（"不好看"），要**一张黑底代码截图**，看起来像随手截的编辑器画面。
+
+做法：matplotlib 画 VS Code 深色主题的代码图（`scripts/make_code_shot.py`）。
+
+**配色**（VS Code Dark+）：
+```python
+BG="#1E1E1E"  GUTTER="#252526"  C_DEF="#D4D4D4"
+C_KEY="#569CD6"   C_STR="#CE9178"   C_FUN="#DCDCAA"
+C_VAR="#9CDCFE"   C_NUM="#B5CEA8"   C_CMT="#6A9955"
+```
+
+**关键坑：分段着色的宽度计算**。语法高亮要把一行拆成多个 `(文本, 颜色)` 片段分别渲染，若手算宽度推进 x 坐标，几乎必然重叠。
+
+```python
+# ✔ 用 HPacker/TextArea，宽度由 matplotlib 自己算
+from matplotlib.offsetbox import TextArea, HPacker, AnnotationBbox
+boxes = [TextArea(t, textprops=dict(color=c, fontsize=9.6, va="top")) for t, c in segs]
+pack = HPacker(children=boxes, align="top", pad=0, sep=0)
+ax.add_artist(AnnotationBbox(pack, (x, y), xycoords="data", frameon=False,
+                             box_alignment=(0, 1.0), pad=0))
+# ✘ 不要用 get_window_extent 逐片段测量再累加，实测仍会粘连
+#    （下划线、点号等字符的 advance width 有偏差）
+```
+
+**另一个坑**：Consolas 无中文字形，且 `font.sans-serif` 列表回退在 `savefig` 时**不可靠**——中文会全变成方框。代码里有中文（关键词列表、注释）时，直接统一用 `Microsoft YaHei`，别指望回退。
+
+---
+
+## 图表编号：全文统一，按出现顺序
+
+用户要求「从第一页到最后一页，第一张图叫图1，第一张表叫表1」——**阿拉伯数字，不是中文数字**。
+
+- 图注格式：`图1  XXX说明`
+- 表题格式：`表1  XXX说明`（居中、加粗、小五）
+- 附录里的截图**也纳入同一编号体系**（代码截图可能是图9）
+
+⚠️ **注入时的经典 bug**：正文若提前提到「见文末图9」，注入脚本会**在那里就把图9插进去**。要么别提前引用，要么把「附图/代码见图9」这类表述放到真正的位置。
+
+**附录分页**：`## 附录二` 前插入分页符，保证附录各自另起一页。
+```python
+p = cell.add_paragraph(); r = p.add_run()
+br = OxmlElement("w:br"); br.set(qn("w:type"), "page"); r._element.append(br)
+```
+
+---
+
 ## 正文文风：Kelsen 的硬要求（踩过才记住）
 
 这位用户对"AI 味"极敏感，作业/报告正文必须满足：
