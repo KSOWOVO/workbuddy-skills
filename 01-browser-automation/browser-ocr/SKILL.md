@@ -55,6 +55,43 @@ description: >
 2. `agent-browser install`
 3. `pip install paddlepaddle==3.1.0 paddleocr rapidocr-onnxruntime`（用清华源 `-i https://pypi.tuna.tsinghua.edu.cn/simple` 加速）
 
+## ⚠️ 环境排障（2026-09-15 实测固化，重要）
+
+### 代理端口 = 7897（不是 7890）
+本机 Clash Verge 的 HTTP 代理端口是 **7897**。写死 7890 会直接报
+`net::ERR_PROXY_CONNECTION_FAILED`。拿不准时用 node `net.connect` 批量探测常见端口
+（7890/7891/7897/7898/10808/10809/1080/33210）再决定。
+
+### `agent-browser install` 报 exit code 1 时先别急着重装
+实测出现过「install 后台跑 3 分钟返回 exit code 1」，但 Chromium **其实已经装好了**。
+先验证：
+```bash
+ls ~/.agent-browser/browsers/*/chrome.exe    # 或 PowerShell: Get-ChildItem
+```
+只要 `chrome.exe` 在位，就能正常用，不用重装。
+
+### Git Bash 损坏时的兜底：直调 native exe
+若 shell 环境异常（`dirname/ls/head/mkdir: command not found`，或 `cd <dir> && <cmd>` 被
+SIGTERM 静默杀掉、输出全吞），**不要硬用 shell**。改用纯 node 脚本 `spawnSync` 直调
+native 二进制：
+```js
+const BIN='C:\\Users\\<user>\\.workbuddy\\binaries\\node\\versions\\22.22.2-3\\node_modules\\agent-browser\\bin\\agent-browser-win32-x64.exe';
+// 注意实际版本目录号可能不同，先 ls node_modules/agent-browser/bin/ 确认
+const env={...process.env,HTTP_PROXY:'http://127.0.0.1:7897',HTTPS_PROXY:'http://127.0.0.1:7897',ALL_PROXY:'http://127.0.0.1:7897',NO_PROXY:'localhost,127.0.0.1'};
+const r=require('child_process').spawnSync(BIN,['open',url],{env,encoding:'utf8',timeout:200000,maxBuffer:8e7});
+require('fs').writeFileSync('ab_log.txt',(r.stdout||'')+'\n'+(r.stderr||''),'utf8'); // 务必落盘再 Read
+```
+要点：① **timeout ≥180s**（冷启动 Chromium 要 2-3 分钟，超时会被误判失败）
+② 结果**写文件再 Read**，不要指望 shell 回显 ③ 成功标志是 stdout 出现 `✓ <页面标题>`
+④ 多步用 `open` → `wait --load networkidle` → `snapshot` 顺序，`wait` 失败可降级为 `wait --timeout 6000`
+
+### 中文 UGC 平台反爬（别浪费时间）
+- **小红书**：走代理返回 `error_code=300012 IP存在风险`；不走代理直连 `os error 10060`。
+  **两条路都被拦，属平台级风控**，换 IP 也未必行，不要反复重试。
+- **知乎**：搜索页直接跳「安全验证」，需登录态。
+- 结论：需要真实案例/数据时，**优先大学官网、政府机构、GradCafe、LinkedIn**，
+  这些无登录墙且信息质量更高。
+
 ## 核心脚本
 
 本 skill 自带两个脚本：
