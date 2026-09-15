@@ -157,6 +157,36 @@ for k in re.findall(r"图\d+", s):     # ✔
 
 ---
 
+## 正文文风：Kelsen 的硬要求（踩过才记住）
+
+这位用户对"AI 味"极敏感，作业/报告正文必须满足：
+
+| 禁止 | 替换为 |
+|---|---|
+| 分号 `；` | 目标 **0 个**，改句号断句 |
+| 其一 / 其二 / 其三 | 第一是 / 第二是 / 第三是 |
+| 值得注意的是、综上所述、换言之、颇具启示、有鉴于此 | 直接删掉，或改「但…更值得关注」 |
+| 破折号 `——` 堆叠 | 各留 1 处，其余拆句 |
+| 解释性括号 `（说明：…）`、`（注：…）` | **全删**，内容融进正文或直接不要 |
+| 加粗 `**…**` | 作业正文不加粗（标题层级靠字号区分） |
+| 同句连重（N 段收尾同一句） | 轮换 3 种说法 |
+
+**正面要求**：
+- 用「我们」写，有第一人称的现场感（"我们在调研中捕捉到""这组数字说明"）
+- 句子长短交错，短句断得干脆
+- 讲具体的数字和动作，不讲空泛的总结
+- 结尾落到一个具体判断，不要"综上所述"式收束
+- 字数**按内容需要写**：作业要求 1500 字时写 2500-3500 字是合适的，但不要写到 7000 字（会显得堆砌）
+
+**结构上**：如果报告用了爬虫/数据采集，逻辑必须是
+`企业产品介绍 → 我们爬了什么数据、怎么爬的 → 基于数据的分析 → 结论`
+**不要**把数据来源打散在各章，要**集中一段说清楚**（用户原话："你这样有点散"）。
+爬虫代码片段与原始数据表放附录，这是区别于普通作业的核心卖点。
+
+**图注编号**：用中文数字「图一、图二…」，与正文引用严格一致；案例实拍图也纳入同一编号体系。
+
+---
+
 ## 自制图表清单（"图文并茂"的高分组合）
 
 matplotlib 需 `pip install matplotlib squarify`（装到 venv），中文要 `font_manager.addfont(r"C:\Windows\Fonts\msyh.ttc")`。
@@ -178,6 +208,49 @@ rects = squarify.squarify(squarify.normalize_sizes(sizes, W, H), 0, 0, W, H)
 # 面积 >900 用 10.5pt，>380 用 9.2pt，>170 用 8pt，更小只显标签不显数字
 ```
 颜色分类里**避免两个相近色**（如 #8E44AD 与 #7D3C98 都是紫，图例会分不清）。
+
+### ⚠️ 圆角柱：在数据坐标下必被拉伸（踩过两次）
+
+`FancyBboxPatch` 的 `rounding_size` 在数据坐标下，x 与 y 的量纲不同（柱宽 0.5、柱高 7000），圆角会被压成看不见。
+
+**正确做法**：按两个方向分别把「屏幕像素半径」换算成数据单位。
+
+```python
+def pixratio(ax):
+    p = ax.transData.transform((0, 0))
+    sx = abs(ax.transData.transform((1, 0))[0] - p[0])   # 每数据单位的x像素
+    sy = abs(ax.transData.transform((0, 1))[1] - p[1])   # 每数据单位的y像素
+    return sx, sy
+
+def round_rect(ax, x, y, w, h, r_px, color):
+    sx, sy = pixratio(ax)
+    rx = min(r_px / sx, w / 2)      # ← 各自维度限制！
+    ry = min(r_px / sy, h / 2)      # ← 不要把 x 的宽度套到 y 上
+    v = [(x, y), (x, y + h - ry),
+         (x, y + h), (x + rx, y + h),          # 左上圆角
+         (x + w - rx, y + h),
+         (x + w, y + h), (x + w, y + h - ry),  # 右上圆角
+         (x + w, y), (x, y)]
+    c = [Path.MOVETO, Path.LINETO, Path.CURVE3, Path.CURVE3, Path.LINETO,
+         Path.CURVE3, Path.CURVE3, Path.LINETO, Path.CLOSEPOLY]
+    ax.add_patch(PathPatch(Path(v, c), facecolor=color, edgecolor="none"))
+```
+**易错点**：写成 `ry = min(r_px/sy, w/2)` 就白做了（用柱宽限制柱高方向的半径 = 圆角趋近 0）。
+**验证方法**：生成图后扫柱顶那一行像素，若从柱左边界开始就是柱色，说明圆角没生效。
+
+### 用户偏好的视觉语言（Kelsen）
+
+**深蓝圆角卡片 + 编号徽章 + 大留白 + 无边框**，配色参考：
+```python
+C_DEEP="#12456B"  C_MAIN="#1B6CA8"  C_LIGHT="#3E9DD9"
+C_RED="#D64545"   C_ORANGE="#E8843C" C_GREEN="#2E9E7E"  C_GREY="#8496A5"
+```
+- `axes.spines` 全部隐藏、`set_yticks([])`、无网格线
+- 标题左对齐 + 副标题（数据来源/说明）分两行，**用 `pad=40+` 留出空间，否则标题与来源文字重叠**
+- 柱体内不要塞文字（矮柱会溢出）
+- 流程图/示意图用 `FancyBboxPatch(boxstyle="round,pad=0,rounding_size=1.6")`——**在等比例坐标系（如 0-100 × 0-34）里画，圆角才正常**
+- 别画雷达图、路径模型这类学术味重的图，课程作业容易被质疑"老师让你解释答不上来"
+
 
 ---
 
