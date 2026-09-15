@@ -94,11 +94,11 @@ ax.set_xticklabels(["%s\n%s" % (p[0], p[1]) for p in PV], fontsize=10,
                    color="#243746", linespacing=1.8)
 ax.set_ylim(0, max(vs) * 1.30); ax.set_yticks([]); ax.set_xlim(-0.62, len(PV) - 0.38)
 strip(ax)
-ax.set_title("图一  游戏科学官方PV在B站的传播量级", fontsize=16, fontweight="bold",
+ax.set_title("图3  游戏科学官方PV在哔哩哔哩的传播量级", fontsize=16, fontweight="bold",
              color="#0E2A3F", pad=46, loc="left")
 ax.text(0.0, 1.035, "数据来源：本组于%s自建爬虫采集，样本为游戏科学官方账号发布的全部PV" % DATE_CN,
         transform=ax.transAxes, fontsize=10, color=C_GREY)
-save(fig, "figA_pv.png")
+save(fig, "fig3_pv.png")
 
 # =====================================================================
 # 图二  数据采集与分析流程（突出「我们真的爬了」）
@@ -110,7 +110,7 @@ STEPS = [
     ("01", "确定采集对象", "锁定游戏科学官方\n及头部二创内容", C_DEEP),
     ("02", "调用公开接口", "B站 web-interface\n5个关键词×20条", C_MAIN),
     ("03", "数据清洗", "剔除无关视频\n得28条有效样本", C_LIGHT),
-    ("04", "可视化分析", "绘制6张图表\n支撑本报告结论", C_GREEN),
+    ("04", "可视化分析", "完成数据可视化\n支撑本报告结论", C_GREEN),
 ]
 bw, bh, gap = 21.5, 19.0, 5.6
 x0 = 1.0
@@ -131,11 +131,11 @@ for i, (num, title, desc, col) in enumerate(STEPS):
         ax.add_patch(FancyArrowPatch((x + bw + 0.8, 15.5), (x + bw + gap - 0.8, 15.5),
                                      arrowstyle="-|>", mutation_scale=16,
                                      color=C_PALE, lw=2.6))
-ax.text(53, 31.0, "图二  本报告的数据采集与处理流程", ha="center", fontsize=16,
+ax.text(53, 31.0, "图2  本报告的数据采集与处理流程", ha="center", fontsize=16,
         fontweight="bold", color="#0E2A3F")
 ax.text(53, 2.2, "全部数据均由本组自建脚本通过公开接口采集，可复现、可核验",
         ha="center", fontsize=9.5, color=C_GREY)
-save(fig, "figB_flow.png")
+save(fig, "fig2_flow.png")
 
 # =====================================================================
 # 图三  内容生态矩形树状图
@@ -185,13 +185,13 @@ for rect, r in zip(rects, rows):
     ax.text(x + dx / 2, y + dy / 2, "%s\n%.0f万" % (label, r["view"] / 1e4) if num else label,
             ha="center", va="center", fontsize=fs, color="white", fontweight="bold", linespacing=1.6)
 ax.set_xlim(0, WW); ax.set_ylim(0, HH); ax.axis("off")
-ax.text(0, HH * 1.13, "图三  内容生态结构", fontsize=16, fontweight="bold", color="#0E2A3F")
+ax.text(0, HH * 1.13, "图4  内容生态结构", fontsize=16, fontweight="bold", color="#0E2A3F")
 ax.text(0, HH * 1.045, "面积表示播放量，颜色区分内容类型　|　共28条有效样本，累计播放5.16亿次",
         fontsize=10, color=C_GREY)
 handles = [Rectangle((0, 0), 1, 1, facecolor=CC[c]) for c in CC]
 ax.legend(handles, list(CC.keys()), loc="upper center", bbox_to_anchor=(0.5, -0.02),
           ncol=6, fontsize=10.5, frameon=False)
-save(fig, "figC_treemap.png")
+save(fig, "fig4_treemap.png")
 
 # =====================================================================
 # 图四  单条PV互动结构
@@ -225,11 +225,11 @@ strip(ax2)
 ax2.set_title("投币率反超点赞率", fontsize=13, fontweight="bold", color="#0E2A3F", pad=10)
 ax2.text(0.5, max(pl, pc) * 1.27, "在B站投币需消耗用户自有硬币，\n投币量高于点赞量属罕见信号",
          ha="center", fontsize=10, color=C_RED, linespacing=1.8)
-fig.text(0.012, 1.045, "图四  《黑神话：悟空》13分钟实机演示的互动结构", fontsize=16,
+fig.text(0.012, 1.045, "图6  《黑神话：悟空》13分钟实机演示的互动结构", fontsize=16,
          fontweight="bold", color="#0E2A3F", ha="left")
 fig.text(0.012, 0.985, "该视频播放量6571万次，为本组采集样本中传播量级最高的单条内容",
          fontsize=10, color=C_GREY, ha="left")
-save(fig, "figD_interaction.png")
+save(fig, "fig6_interaction.png")
 
 # =====================================================================
 # 图五  钟馗传播走势
@@ -251,11 +251,11 @@ ax.set_xticklabels(["%s\n%s" % (a, b) for a, b, _ in Z], fontsize=11.5,
                    color="#243746", linespacing=1.8)
 ax.set_yticks([]); ax.set_ylim(0, max(vv) * 1.32); ax.set_xlim(-0.62, len(Z) - 0.38)
 strip(ax)
-ax.set_title("图五  《黑神话：钟馗》的传播走势", fontsize=16, fontweight="bold",
+ax.set_title("图7  《黑神话：钟馗》的传播走势", fontsize=16, fontweight="bold",
              color="#0E2A3F", pad=46, loc="left")
 ax.text(0.0, 1.035, "深蓝为播放量，橙色为分享量　|　在零发售窗口期内热度回升，未出现逐次衰减",
         transform=ax.transAxes, fontsize=10, color=C_GREY)
-save(fig, "figE_zhongkui.png")
+save(fig, "fig7_zhongkui.png")
 
 # =====================================================================
 # 图六  播放量Top10
@@ -272,10 +272,10 @@ ax.set_yticklabels(["[%s] %s" % (r["cat"], SHORT.get(r["bvid"], r["title"][:14])
                    fontsize=10, color="#243746")
 ax.set_xticks([]); ax.set_xlim(0, max(vals6) * 1.17); ax.set_ylim(-0.7, len(top) - 0.3)
 strip(ax); ax.tick_params(axis="y", pad=8)
-ax.set_title("图六  播放量前十的内容排行", fontsize=16, fontweight="bold",
+ax.set_title("图5  播放量前十的内容排行", fontsize=16, fontweight="bold",
              color="#0E2A3F", pad=34, loc="left")
 ax.text(0.0, 1.02, "颜色区分内容类型　|　官方内容占据前两位，但创作者内容合计入榜七席",
         transform=ax.transAxes, fontsize=10, color=C_GREY)
-save(fig, "figF_top10.png")
+save(fig, "fig5_top10.png")
 
 print("\n全部完成 → figs3/")
