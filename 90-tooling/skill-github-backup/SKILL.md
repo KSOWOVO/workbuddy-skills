@@ -81,3 +81,8 @@ git push    # 502 就多试几次（网络间歇性）
   `curl -s -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/KSOWOVO/workbuddy-skills/contents/`
 - 网络慢时 push 可能 SIGTERM：重试即可，commit 已成功不受影响。
 - ⚠️ **其他窗口也共享此 git 仓库**：别的模型/窗口可能在更新 skill 后放回根目录路径，导致重复。同步前检查 `git ls-files | grep <skill名>` 是否有根目录与分类目录两份，有则 `git rm -f <根目录重复>` 清理后再同步（内容先合并到分类目录）。
+
+- 🚨 **2026-09-16 实测新坑（三条，全部踩过）**：
+  1. **API 兜底只覆盖 skill 目录，INDEX.md / weights.json 不会被上传** —— 必须手动 Contents API PUT 补传这两个全局文件（GET 当前 sha → PUT 带 sha + branch main），传完必须 GET 回内容做断言，不能只看 HTTP 200。
+  2. **push 报 non-fast-forward ≠ 网络问题**：前一轮被 SIGTERM 的脚本可能已完成 API 兜底 PUT（远端已有 API commit）→ 本地 push 自然被拒。先 `git fetch` 看远端再决定，别盲目重试。
+  3. **⚠️ 对 skills 仓库做 `git reset --hard origin/main` 有砸工作区风险**：fetch 与 rev-parse 之间 origin/main 引用可能解析到旧值，且本地工作区历史上就缺大量 tracked 文件 → reset 到旧引用后 9 处文件丢失（含 skill_match.py）。**对齐必须 reset 到 API 查到的具体云端 SHA**（如 f17dae7），不要用 origin/main 引用；reset 前先 `git cat-file -t <sha>` 确认对象在本地。恢复方法：`git reset --hard <云端最新SHA>` 一步找回全部。
