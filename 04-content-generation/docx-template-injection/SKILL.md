@@ -187,6 +187,41 @@ ax.add_artist(AnnotationBbox(pack, (x, y), xycoords="data", frameon=False,
 
 ---
 
+### ⚠️ 附录表格是「嵌套表」——不在 doc.tables 顶层
+
+正文在模板的单元格里，用 `cell.add_table()` 加的数据表是**嵌套表**，`doc.tables` 里**找不到**！
+二次修改（如改三线表）时必须递归查找：
+
+```python
+def iter_nested(parent_table):
+    for row in parent_table.rows:
+        for cell in row.cells:
+            yield from cell.tables
+
+for tbl in doc.tables:
+    for t in iter_nested(tbl):
+        head = [c.text.strip() for c in t.rows[0].cells]
+        if head[:3] == ["序号", "内容标题", "内容类型"]:
+            ...  # 按表头内容识别
+```
+
+### ⚠️ 用户手改过文档后，新输入的文字会缺字体设置
+
+Word 里用户手工打字新增的 run 通常**没有显式 `w:rFonts`/`w:sz`**（继承样式），逐段审查会报"字体≠宋体"。
+修复：对该段每个 run 补齐 `rFonts(ascii/hAnsi/eastAsia=宋体)` + `sz=21`。
+**教训**：改用户的文档前先 `shutil.copy2` 备份；改完重新跑逐段审查，用审查结果反查用户编辑引入的格式漂移。
+
+### 三线表（学术标准）
+
+```python
+# 表级：全部 none；单元格级：仅三条线
+# 顶线 sz=12 (1.5pt) │ 表头下线 sz=6 (0.75pt) │ 底线 sz=12 (1.5pt) │ 无竖线
+```
+先删表级 `tblBorders` 再重设全 none，然后逐单元格设 top/bottom（见 `scripts/three_line_table.py`）。
+**验证**：读回 `tcBorders` 逐边比对 `(val,sz)`，别只看渲染。
+
+---
+
 ## 图表编号：全文统一，按出现顺序
 
 用户要求「从第一页到最后一页，第一张图叫图1，第一张表叫表1」——**阿拉伯数字，不是中文数字**。
