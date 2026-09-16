@@ -2,13 +2,13 @@
   "_comment": "skill 路由权重配置。作用：多个同类 skill 都能沾边时，按「能力域专长」选出对的那个，并让轻量 skill 优先以省 token。改这个文件即可调路由，不用动脚本。",
   "_how_it_works": "final = 关键词分 × 域专长乘子 × 自创加成 − 体积惩罚。域由 query 命中的触发词判定，可多域加权平均。",
   "defaults": {
-    "domain_multiplier": 1.0,
+    "domain_multiplier": 1,
     "selfmade_boost": 1.15,
     "cost_per_kb": 0.06,
-    "ad_hoc_threshold": 3.0,
-    "domain_hit_factor": 1.0,
+    "ad_hoc_threshold": 3,
+    "domain_hit_factor": 1,
     "close_call_ratio": 0.18,
-    "meta_boost": 2.0,
+    "meta_boost": 2,
     "meta_damp": 0.45
   },
   "domains": {
@@ -41,7 +41,7 @@
       ],
       "weights": {
         "market-query": 1.8,
-        "westock-data": 1.0,
+        "westock-data": 1,
         "neodata-financial-search": 0.8,
         "ifind-finance-data": 0.7,
         "news-search": 0.2
@@ -95,7 +95,7 @@
       ],
       "weights": {
         "news-search": 1.8,
-        "neodata-financial-search": 1.0,
+        "neodata-financial-search": 1,
         "westock-data": 0.9,
         "market-query": 0.2
       }
@@ -544,6 +544,36 @@
       ],
       "weights": {
         "docx-template-injection": 1.8
+      }
+    },
+    "看板自检": {
+      "_note": "多板块单文件 HTML 看板生成后的数据完整性自检。核心洞察：同一份数据被多个板块消费时，容易只接进其中一条渲染链路 —— 数据在专属板块渲染了（dpCard），却没转成主结构格式并入 PROG，于是卡片/筛选/搜索/统计全都看不到。用户的「没看到你放进去啊」几乎总是准确观察，不是误解。",
+      "triggers": [
+        "没看到你放进去",
+        "没放进去",
+        "数据没显示",
+        "数据没进",
+        "筛选里没有",
+        "搜不到",
+        "卡片缺了",
+        "少了一个",
+        "没进卡片",
+        "看板自检",
+        "数据遗漏巡检",
+        "数据完整性",
+        "渲染遗漏",
+        "去重合并",
+        "字段规范化",
+        "重复卡片",
+        "单文件看板",
+        "HTML看板",
+        "作战台",
+        "仪表盘自检",
+        "undefined提示",
+        "筛选按钮显示undefined"
+      ],
+      "weights": {
+        "single-file-dashboard-audit": 1.8
       }
     }
   }
