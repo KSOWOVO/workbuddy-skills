@@ -42,6 +42,36 @@ description: >
 > `GET /repos/KSOWOVO/workbuddy-skills/contents/<path>?ref=main`
 > 返回的 `content` 是 base64，解出来再比对。`api_sync.py` 的复核就走的这条路。
 
+### api_sync.py 的三个关键设计（别改坏）
+
+**① 比对用「原始字节 sha1」，不能用 `git hash-object`**
+本机 `core.autocrlf = input`，`git hash-object` 会先把 CRLF 转 LF 再算哈希；
+而**远端仓库里存的是原始字节**（早年走 Contents API 上传，绕过了 git 过滤器）。
+实测对照（INDEX.md）：
+
+```
+远端 tree 的 blob sha   d45d84a2...   == 手算 sha1(原始字节)  ✅
+git hash-object         42b4597a...   ✗ 差
+```
+
+用错了会把**内容完全相同的文件误报成「已修改」**（实测误报 4 个）。
+
+**② `base_tree` 必须传 tree sha，不是 commit sha**
+`GET /git/ref/heads/main` 返回的 `object.sha` 是 **commit** sha；
+要拿 tree sha 得再 `GET /git/commits/<commit_sha>` 读 `commit.tree.sha`。
+
+**③ 不要用 commit sha 判断「是否已同步」**
+API 建的 commit 由 GitHub 服务端生成，committer/时间戳与本地不同，
+`远端 sha != 本地 sha` **永远成立** → 会每次重推。
+所以本脚本判据是内容（blob sha），天然幂等。
+
+### 预装 skill 被误传上去了（待 Kelsen 决定）
+
+`ifind-finance-data` / `market-query` / `news-search` / `neodata-financial-search` /
+`westock-data` 这 5 个**预装 skill**出现在公开仓库根目录，违反本 skill 的原则 1
+（版权与体积）。`api_sync.py` 里的 `EXCLUDE_PREFIXES` 已让它们**跳过、不删**。
+是否从远端移除需 Kelsen 单独确认（涉及删远端文件，不擅自动手）。
+
 ---
 
 ## 目标仓库
