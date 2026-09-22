@@ -11,6 +11,39 @@ description: >
 
 # Skill 云端备份（GitHub 开源仓库）
 
+## 🔴 首选通道：纯 API 同步（不用代理，2026-09-22 实测定型）
+
+```bash
+"C:/Users/13662/.workbuddy/binaries/python/versions/3.13.12/python.exe" \
+  "C:/Users/13662/.workbuddy/skills/90-tooling/skill-github-backup/scripts/api_sync.py" \
+  <分类目录>/<skill名> [-m "提交说明"]
+```
+
+不带参数就只推送已有本地提交；带目录则先 add+commit 再推（自动带上 `INDEX.md`
+与 `90-tooling/skill-router/weights.json`）。
+
+**为什么必须走 API、不能用 git push**（2026-09-22 逐项实测）：
+
+| 通道 | 直连（不挂代理） | 挂 `127.0.0.1:14146` |
+|---|---|---|
+| `github.com:443` git push | TCP 通但 **TLS 握手被打断**（`Connection was reset`） | **`CONNECT tunnel failed, response 502`** |
+| `raw.githubusercontent.com` | ❌ 失败 | 通 |
+| **`api.github.com`** | **✅ HTTP 200** | **✅ HTTP 200** |
+
+结论：**`api.github.com` 两条路都通，直连即可用**。所以一切读写都走 Git Data API
+（blobs → trees → commits → PATCH ref），等价于一次 git push，**不需要任何代理**。
+
+> ⚠️ **旧文档的坑，别再走回头路**：上一版写「本 shell 通常没有代理环境变量」——
+> **已经不对了**。WorkBuddy 现在会注入 `https_proxy=http://127.0.0.1:14146`，
+> 而该代理对 git push 返回 502。所以**永远不要依赖 `git push`**，
+> `api_sync.py` 内部对 API 请求显式使用 `ProxyHandler({})` 绕开代理。
+
+> ⚠️ **验证不要用 `raw.githubusercontent.com`**（直连失败）。用 Contents API：
+> `GET /repos/KSOWOVO/workbuddy-skills/contents/<path>?ref=main`
+> 返回的 `content` 是 base64，解出来再比对。`api_sync.py` 的复核就走的这条路。
+
+---
+
 ## 目标仓库
 - GitHub 账号：`KSOWOVO`
 - 仓库：`KSOWOVO/workbuddy-skills`（**public**）→ https://github.com/KSOWOVO/workbuddy-skills
