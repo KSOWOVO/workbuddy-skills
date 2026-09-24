@@ -76,6 +76,9 @@ def main():
     ap.add_argument("--lang", "-l", default="zh")
     ap.add_argument("--exclude", action="append", default=None,
                     help="正则，命中文件名的跳过（可多次）")
+    ap.add_argument("--out-dir", default=None,
+                    help="直接指定输出根目录（优先于 --subject/--subdir）。"
+                         "供小A等外部流程先产出到交付区，验收后再归位 vault")
     a = ap.parse_args()
 
     files = collect(a.inputs, a.exclude)
@@ -87,12 +90,16 @@ def main():
         print("没有找到可处理的文件")
         return 1
 
-    # ⚠️ subject 必须传 vault 认识的短名（如「英语语法」），
-    # 否则 resolve_subject 会原样返回，导致目录落到 vault 根下（踩过）。
-    base_subject = PL.resolve_subject(a.subject, "", "")
-    subject = (os.path.join(base_subject, a.subdir)
-               if a.subdir else base_subject)
-    out_dir = os.path.join(PL.VAULT, subject)
+    if a.out_dir:
+        # 外部流程（小A）交付区模式：产出先落指定目录，宿主验收后归位 vault
+        out_dir = os.path.abspath(a.out_dir)
+    else:
+        # ⚠️ subject 必须传 vault 认识的短名（如「英语语法」），
+        # 否则 resolve_subject 会原样返回，导致目录落到 vault 根下（踩过）。
+        base_subject = PL.resolve_subject(a.subject, "", "")
+        subject = (os.path.join(base_subject, a.subdir)
+                   if a.subdir else base_subject)
+        out_dir = os.path.join(PL.VAULT, subject)
     plain_dir = os.path.join(out_dir, "_plain")
     os.makedirs(plain_dir, exist_ok=True)
 

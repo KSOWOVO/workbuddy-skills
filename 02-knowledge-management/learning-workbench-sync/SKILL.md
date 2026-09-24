@@ -1,60 +1,89 @@
 ---
 name: learning-workbench-sync
 agent_created: true
-summary: 学习工作台「同步数据」操作手册 + 长文档加工成结构化学习资产。三种同步模式决策、自更新契约。
+summary: 知识库面板「同步数据」操作手册：从 Obsidian vault 重建站点数据、给新篇目配交互动效。含四层导航架构、27 个动效清单与自更新契约。
 description: >
-  学习工作台「同步数据」与内容加工。触发词：同步 / 同步数据 / 更新工作台 / 拉取新资料 /
-  加工整理视频 / 转写稿做进工作台 / 生成思维导图 / 做导读 / 提炼精华。
-  三种模式：① WorkBuddy 手工（我亲自总结，质量最高）② 本地后端自动（node server/server.js + DeepSeek，浏览器点按钮全自动）
-  ③ 静态刷新（无后端，只重载 data.js）。
-  流程：探测 ima/Obsidian 新资料 → 拉全文 → 通顺不删减加工 → 写 xx-content.js + data.js fullRef → 校验。
-  产物在 learning-workbench/。数据契约与质检细节见 references/。
+  知识库面板（learning-workbench）「同步数据」与内容重构。触发词：同步 / 同步数据 / 更新工作台 /
+  更新知识库面板 / 拉取新资料 / Obsidian 可视化 / 给新篇目做动效。
+  流程：扫 Obsidian vault（只读）→ node _parse.js 生成 kb-data.json → node _mkdata.js 生成 kb-data.js
+  → node _smoke.js 冒烟校验 → 若新增语法篇目则在 widgets.js 补一个专属交互动效。
+  站点为四层导航（总览→领域→篇目→正文），27 篇英语语法各有专属动效。
+  产物在 learning-workbench/。细节见 references/。
 ---
 
-# 学习工作台 · 同步数据
+# 知识库面板 · 同步数据
 
 工作台目录：`C:\Users\13662\WorkBuddy\2026-08-31-20-05-05\learning-workbench\`
+数据源：`C:\Users\13662\Documents\Obsidian`（**只读，绝不修改原文件**）
 
-## 先判断：用哪种同步模式
+## 同步（三步脚本）
 
-| 模式 | 触发场景 | 谁总结 | 操作 |
-|---|---|---|---|
-| **A 手工加工** | 对话里说「同步/加工/整理」 | **我亲自做**，质量最高 | 见下方「操作步骤」 |
-| **B 后端自动** | 浏览器点「同步」，后端在跑 | DeepSeek（提示词复刻格式） | `node server/server.js`（:8787） |
-| **C 静态刷新** | file:// 或纯静态托管 | 无（只重载） | 前端自动降级，不是 bug |
+```bash
+cd learning-workbench
+node _parse.js      # 扫 vault → kb-data.json（兼容两种转录格式，自动分节，ts 自动对齐）
+node _mkdata.js     # kb-data.json → kb-data.js（前端 <script> 直载）
+node _smoke.js      # 冒烟：27 个 widget 渲染 + 领域覆盖 + 数据完整性
+```
 
-## 操作步骤（模式 A，每条一句话）
+改完刷新浏览器即可（静态站点，无需重启）。本地服务：`node server/server.js`（:8787）。
 
-1. 探测：ima `get_knowledge_list`（按更新时间倒序）找新增；Obsidian 扫 `C:/Users/13662/Documents/Obsidian`。
-2. 去重：与 data.js 已有条目按标题/source 比对。
-3. 拉全文：`fetch_media_content`（media_id 从步骤 1 拿）。
-4. 加工（铁律）：清洗口语/图片 URL → 按 ts 分段 → 生成五面板资产。**通顺不删减、纠错不改意**。
-5. 写文件：`xx-content.js` → data.js 加 fullRef（新增加 contentFile）→ index.html `<script>` 补引用。
-6. 校验（见 references/sync-playbook.md「质检命令」），更新 data.js lastSynced。
+## 站点结构（四层导航）
+
+```
+L1 总览 → L2 领域(6) → L3 篇目 → L4 正文（专属动效 + 沉浸式阅读器）
+```
+- 路由：hash 化 `#/home` `#/d/grammar` `#/p/g13` `#/search/词` `#/fav` `#/help`
+- 文件：`index.html`(外壳) + `styles.css`(设计系统) + `app.js`(路由/视图/阅读器) +
+  `widgets.js`(27 个动效) + `kb-data.js`(内容) + `server/`(后端)
+- 主题：浅色默认（浅蓝 #4f8ef7 + 浅粉 #f7a8c9 + 白），深色对等
+
+## 给新篇目加交互动效（本 skill 的核心价值）
+
+语法篇目 id 为 `g01`~`g27`，其他领域为 `x01`~`xNN`。在 `widgets.js` 的 `W` 注册：
+
+```js
+W.g28 = {
+  t:'动效标题', d:'一句话说明',
+  r:function(){ return '<HTML 结构>'; },        // 返回 HTML 字符串
+  b:function(root,ctx){ /* 绑定交互；ctx.tenses 是 16 时态数据 */ }
+};
+```
+
+**其他领域**用领域级键（自动回退，无需逐篇写）：
+`W['d:雅思写作:大作文']`、`W['d:雅思写作:小作文']`、`W['d:雅思备考']`、
+`W['d:投资理财']`、`W['d:竞赛科研']`、`W['d:课程学习']`
+
+解析顺序（app.js `resolveWidget`）：篇级 → 领域+子类 → 领域级。
+
+可用样式类（已内置于 widgets.js 的 `CSS` 常量）：
+`.w-segs/.w-seg`（分段控件）、`.w-card`、`.w-code`（公式）、`.w-lab`（小标题）、
+`.w-note`、`.w-svgbox`（SVG 容器）、`.tok`（句子成分染色：`.s`主语 `.v`谓语 `.o`宾语 `.be`助动词）、
+`.tl-*`（时态时间线专用）、`.w-tbl`、`.w-blocks/.w-block`、`.w-tree`、`.w-swap`。
 
 ## 自更新契约 ★ 本 skill 是「活文档」
 
-以下变更发生时，**在同一轮任务内**回写更新本 skill，再同步 GitHub：
-
 | 触发事件 | 更新位置 |
 |---|---|
-| ima/Obsidian 增删资料 | `references/sync-playbook.md`「数据源快照」 |
-| data.js 契约字段变化 | sync-playbook「数据契约」 |
-| 工作台新增功能/面板/快捷键/主题 | `references/workbench-details.md`「功能清单」 |
-| server/ 模块或配置变化 | workbench-details「自动同步后端」 |
+| Obsidian 增删篇目 | `references/sync-playbook.md`「数据源快照」 |
+| kb-data 结构或解析规则变化 | sync-playbook「数据契约」+ 本文件同步步骤 |
+| 站点新增功能/快捷键/主题 | `references/workbench-details.md`「功能清单」 |
+| 新增/修改交互动效 | workbench-details「27 个动效清单」 |
 | 踩到新坑 / 更好做法 | 本文件「踩坑记录」+ 对应 references |
 | 每次成功同步后 | sync-playbook「最近同步记录」 |
 
-**更新后必做**：① 自检 SKILL.md ≤5KB、description ≤400 字，超了把细节下放 references；
-② 同步 GitHub：`cd ~/.workbuddy/skills && git add 02-knowledge-management/learning-workbench-sync && git commit -m "..." && git push origin main`。
+**更新后必做**：① 自检 SKILL.md ≤5KB、description ≤400 字，超了下放 references；
+② 同步 GitHub（走 API，见 `90-tooling/skill-github-backup` 的 `scripts/api_sync.py`，
+**不要用 git push**——本机 TLS 被墙）。
 
 ## 踩坑记录（最易踩的 3 条）
 
-1. **merge 必须覆盖**：`mergeFullContent` 用 `full[k] !== undefined` 覆盖，否则 data.js 预置的 `essence: []` 吞掉完整版。
-2. **chapter ts 必须与 segments 对齐**：合并相邻段时同步改 chapters 的 ts，否则导读点击无反应。
-3. **file:// 不能 fetch JSON**：数据用 `<script>` 注入；后端生成的 obs-*.js 靠 `contentFile` 动态注入。
+1. **vault 有两种转录格式**：`## ▎小节` + `**00:00**`（词法/句法）与
+   `发言人1   00:00`（动词组）。后者**「发言人」后可能带数字**，正则漏了会导致整篇被解析成 1 段。
+2. **章节 ts 必须落在 segments 上**，否则大纲点击无效；`_parse.js` 已内置自动就近对齐。
+3. **本机 Git Bash 常年损坏**（`dirname/ls/head/curl/sleep` 全 command not found，
+   node 路径会变版本号）。**一律用 PowerShell 调 `node`**，不要依赖 bash 工具链。
 
 ## 详细参考
 
-- `references/sync-playbook.md` — 数据契约（完整版）、三种模式细节、质检命令、踩坑速查、数据源快照、最近同步记录
-- `references/workbench-details.md` — 设计系统（浅色主题）、功能清单、后端架构
+- `references/sync-playbook.md` — 数据契约、解析规则、质检命令、数据源快照、最近同步记录
+- `references/workbench-details.md` — 设计系统、功能清单、27 个动效清单、前端架构

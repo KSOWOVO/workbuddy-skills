@@ -116,14 +116,27 @@ def local_state(files):
 
 
 def get_token():
+    """优先凭据管理器；失败则回退到 remote URL 里内嵌的 PAT（本机实测可用）。"""
     r = subprocess.run(["git", "credential", "fill"],
                        input="protocol=https\nhost=github.com\n\n",
                        capture_output=True, text=True, encoding="utf-8",
                        errors="replace", cwd=ROOT, timeout=30)
     for ln in (r.stdout or "").splitlines():
         if ln.startswith("password="):
-            return ln.split("=", 1)[1].strip()
-    raise RuntimeError("无法从凭据管理器取到 GitHub token")
+            tok = ln.split("=", 1)[1].strip()
+            if tok:
+                return tok
+    # 回退：remote URL 形如 https://x-access-token:<PAT>@github.com/...
+    try:
+        u = subprocess.run(["git", "remote", "get-url", "origin"],
+                           capture_output=True, text=True, encoding="utf-8",
+                           errors="replace", cwd=ROOT, timeout=30).stdout.strip()
+        m = re.search(r"https://[^:@/]+:([^@]+)@", u)
+        if m:
+            return m.group(1).strip()
+    except Exception:
+        pass
+    raise RuntimeError("无法取到 GitHub token（凭据管理器与 remote URL 均失败）")
 
 
 def api(method, path, token, body=None, retries=4):
@@ -211,7 +224,9 @@ def main():
                              if os.path.isfile(os.path.join(ROOT, g))]
         for p in add:
             git("add", p)
-        if git("status", "--porcelain").strip():
+        # ★ 只看「暂存区」是否为空。用 git status（整仓）会被无关的未暂存改动干扰，
+        #   导致误判「有改动要提交」，而 commit 时暂存区是空的 → 报错。
+        if git("diff", "--cached", "--name-only").strip():
             git("commit", "-m", a.message or ("sync: %s" % ", ".join(paths)))
             log("   本地提交:", git("rev-parse", "--short", "HEAD").strip())
         else:
