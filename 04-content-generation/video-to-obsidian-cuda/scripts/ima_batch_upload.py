@@ -30,14 +30,45 @@ MIME = {".md": "text/markdown", ".txt": "text/plain", ".pdf": "application/pdf"}
 
 # ---------- MCP 调用 ----------
 def mcp_cfg():
+    """
+    ima 的 MCP 调用配置，两级解析：
+    ① 环境变量 CODEBUDDY_MCP_CONFIG 里有 ima-mcp 条目（会话启动时 ima 已连接）
+    ② 否则兜底：connector-proxy 端点 + 从 ~/.workbuddy/mcp-tool-list.json
+       的 entries 里定位 ima 路由 hash（create_media 所在的路由）。
+    端口每会话会漂移（实测 1285/2488/4160），一律动态读取，绝不硬编码。
+    """
     cfg = os.environ.get("CODEBUDDY_MCP_CONFIG", "")
     if not cfg:
         raise RuntimeError("环境缺 CODEBUDDY_MCP_CONFIG")
-    s = json.loads(cfg)["mcpServers"]
-    for k in ("ima-mcp", "ima"):
-        if k in s:
-            return s[k]
-    raise RuntimeError("找不到 ima MCP 配置")
+    servers = json.loads(cfg).get("mcpServers", {})
+    for k in ("ima-mcp", "ima", "connector:ima-mcp"):
+        if k in servers:
+            return servers[k]
+
+    # —— 兜底：connector-proxy 端点 + 动态路由 hash ——
+    proxy = None
+    for k, v in servers.items():
+        u = (v.get("url") or "")
+        if "/mcp" in u and ("127.0.0.1" in u or "localhost" in u):
+            proxy = v
+            break
+    if not proxy:
+        raise RuntimeError("找不到 connector-proxy 端点")
+
+    tl = os.path.expanduser(r"~\.workbuddy\mcp-tool-list.json")
+    entries = json.load(open(tl, encoding="utf-8")).get("entries", {})
+    h = None
+    for rh, tools in entries.items():
+        if isinstance(tools, list) and any(
+                isinstance(t, dict) and t.get("name") == "create_media"
+                for t in tools):
+            h = rh
+            break
+    if not h:
+        raise RuntimeError("mcp-tool-list.json 里没找到 ima 路由")
+    base = proxy["url"].rsplit("/", 1)[0]
+    return {"url": "%s/%s/mcp" % (base, h),
+            "headers": proxy.get("headers", {})}
 
 
 _CFG = None
