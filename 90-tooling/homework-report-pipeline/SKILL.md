@@ -283,3 +283,42 @@ for i in range(4):
 ## 用户待办
 装 Jupyter → 打开 ipynb → **F5 刷新**（预执行后必须刷新）→ 逐格截图 → 把图交回贴进 Word。
 ⚠️ 提醒用户不要点 `Restart & Clear Output`，会清掉已跑好的结果。
+
+## 🧹 交付后清理归档（2026-09-28 实操）
+
+作业流水线会产出**大量一次性中间文件**（本次 253 个 / 27MB）。用户常说「你整理一下吧，看哪些要删自己判断」。
+
+### 保留 vs 清理的判定
+**保留**（回滚 / 可复用）：
+- 桌面成品 .doc 填表前的**回滚点**
+- **老师原模板**（去保护副本）
+- 可复用的 **XML 片段**（如角色分工表 `<w:tbl>`）
+- **正文快照文本**（核对用）
+- 3 个**工具脚本**：`exec_nb.py` / `restore_real_doc.py` / `upscale_chat.py`
+- 早期**原始截图素材**（交付版重新截图后，原始大图仍可能要用）
+
+**清理**：派活目录（`xiaoA*/`）、`anaconda_projects/`、`.ipynb_checkpoints/`、
+`_r*.json`、`_prompt.txt`、各种 `_dbg/_log/_cmp/*.ps1`、过程版 doc、失败尝试的 IPYNB、
+小图（`q2.png`…`q10.png` 这类几十 KB 的）。
+
+### 🔴 一律送回收站，不永久删除
+用 `SHFileOperationW` + `FOF_ALLOWUNDO`：
+```python
+FOF_ALLOWUNDO=0x40; FOF_NOCONFIRMATION=0x10; FOF_SILENT=0x4; FOF_NOERRORUI=0x400
+op.pFrom = "\0".join(paths) + "\0\0"   # 双 NUL 结尾
+op.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI
+ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
+```
+- 🔴🔴 **`pFrom` 里所有路径必须统一为反斜杠绝对路径**。正反斜杠混用 → 返回 `rc=2`（`ERROR_FILE_NOT_FOUND`），
+  **但目标往往已被删掉**，容易误判失败。先 `os.path.normpath(os.path.abspath(p))` 再传。
+- 分批 ≤40 个，逐批验证。
+
+### 核验「真的进了回收站（可恢复）」
+扫 `C:\$Recycle.Bin\<SID>\$I*` 元数据（Win10 v2 格式）：
+- 偏移 `0-7` = 版本（`<q`）；`8-15` = 文件大小（`<q`）；**`24` 起 = UTF-16LE 原始路径**
+- ⚠️ `S-1-5-18`（系统账户）目录**无权限**，要 `except PermissionError: continue`
+- ⚠️ **Bash 里写 `$Recycle.Bin` 会被 shell 变量展开吃掉**（变成 `/.Bin`）→ **必须用 Python 拼路径**，或写进 `.py` 文件
+
+### 已知死角
+- **`nul` 文件删不掉**：Windows 保留设备名，报 `0x800704B0`；Explorer 里不可见。只能忽略（本次残留 67 B）。
+- 清完顺手 `taskkill /F /PID` 掉**标题为空的残留 WINWORD**（见上一节）。
