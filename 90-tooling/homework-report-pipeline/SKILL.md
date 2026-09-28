@@ -249,6 +249,14 @@ d.Close(0); word.Quit()
 - ✅ **验证**：读文件头前 4 字节必须是 `D0 CF 11 E0`；再比对**页数 / 内联图数量 / 图片宽度**与原文件一致
 - pywin32 装在隔离 venv：`C:\Users\13662\.workbuddy\binaries\python\envs\default\Scripts\python.exe`
 
+### ⚠️ Word COM 自动化会**残留 WINWORD 进程**（2026-09-27 实测）
+脚本报错在 `Documents.Open` 之后、`Close/Quit` 之前时，会留下**无窗口的 WINWORD**，
+**锁住当时打开的那个文件** → 后续删不掉、移不动（本次 `_roletbl_fixed.docx` 就被锁住）。
+- **判别**：`Get-Process WINWORD | Select Id,MainWindowTitle` → **标题为空 = 无头自动化残留**；用户的文档会显示文件名
+- **安全确认**：检查目标文件的目录有没有 `~$xxx.doc` 锁文件 —— **没有锁文件 = 用户没开着 Word**
+- **清理**：`taskkill /F /PID <pid>`（只杀标题为空的那些）
+- 预防：Word COM 脚本用 `try/finally` 保证 `d.Close(0); word.Quit()` 一定执行
+
 ### 用户用 Word 外部编辑后，edsdk 实例会失效
 - `get_pool_status` 会显示 `file_path: ""`、`last_saved_ms: -1`；旧 `table_id` 报 `not found`
 - ✅ 重新 `open_file`（fresh, `wait=true`）→ `doc_list_tables` **重取 table_id**（内容一变 id 就变）
